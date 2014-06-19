@@ -1,4 +1,5 @@
-![The Beardy Bunch Logo](beardy.jpg)
+![The Beardy Bunch Logo](Beardy-Bunch-Curve-Tie-Clean.jpg)
+
 The Beardy Bunch
 ===========
 
