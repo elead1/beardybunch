@@ -1,0 +1,26 @@
+#Enumeration of all suspects.
+suspects: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(8) NOT NULL}
+
+#Enumeration of all locations.
+locations: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(24) NOT NULL}
+
+#Enumeration of all weapons.
+weapons: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(12) NOT NULL}
+
+#Tracks existing games and which suspect's turn it is. PK used to reference into other tables.
+games: {id INT PRIMARY KEY AUTOINCREMENT, turn INT NOT NULL FK(suspects.id)}
+
+#Tracks which clients are assigned to which suspects for each game.
+player_assignments: {id INT PRIMARY KEY FK(games.id), client_id INT, 
+	suspect INT NOT NULL FK(suspects.id)}
+
+#Tracks where each suspect is located in each game.
+suspect_locations: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id),
+	location INT NOT NULL FK(locations.id)}
+	
+#Tracks the selected casefile for each game.
+casefiles: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id), 
+	location INT NOT NULL FK(locations.id), weapon INT NOT NULL FK(weapons.id)}
+
+#Keeps record of which players have been eliminated for each game.
+losing_players: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id)}

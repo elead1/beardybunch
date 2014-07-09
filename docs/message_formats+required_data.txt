@@ -1,0 +1,81 @@
+Suspects (Map/ENUM):
+---------
+Scarlet: 1
+Mustard:2
+White:3
+Green:4
+Peacock:5
+Plum:6
+
+Locations (Map/ENUM):
+---------------------
+Study: 1
+Study-Hall: 2
+Hall: 3
+Hall-Lounge: 4
+Lounge: 5
+Study-Library: 6
+Hall-Billiard: 7
+Lounge-Dining: 8
+Library: 9
+Library-Billiard: 10
+Billiard: 11
+Billiard-Dining: 12
+Dining: 13
+Library-Conservatory: 14
+Billiard-Ballroom: 15
+Dining-Kitchen: 16
+Conservatory: 17
+Conservatory-Ballroom: 18
+Ballroom: 19
+Ballroom-Kitchen: 20
+Kitchen: 21
+
+Valid-Moves (Matrix):
+-------------------
+1:  2, 6, 21
+2:  1, 3
+3:  2, 4, 7
+4:  3, 5
+5:  4, 8, 17
+6:  1, 9
+7:  3, 11
+8:  5, 13
+9:  6, 10, 14
+10: 9, 11
+11: 10, 7, 12, 15
+12: 11, 13
+13: 12, 8, 16
+14: 9, 17
+15: 11, 19
+16: 13, 21
+17: 14, 18, 5
+18: 17, 19
+19: 18, 15, 20
+20: 19, 21
+21: 20, 16, 1
+
+Move message (Client->server):
+MOVE,<player>,<suspect>,<new_location>,[<current_location>?]
+
+Move response (Server->clients):
+MOVED,<suspect>,<new_location>
+
+Suggest (Client->server)
+SUGGEST,<player>,<accused>,<room>,<weapon>,<accuse (t/f)>
+
+Suggestion made (Server->clients):
+SUGGESTED,<accused>,<room>,<weapon>,<accuse (t/f)>
+
+Refute suggestion (client->server):
+REFUTE,<player>,[<suggest-component-refuted (suspect/room/weapon)>,...]
+
+Suggestion refuted (server->clients):
+REFUTED,<player>,[<suggest-component-refuted>, ...]
+
+Game over, incorrect accusation (server->client)
+GAMEOVER,<player>
+
+Game over, correct accusation (server->clients)
+WINNER,<winning-player>
+
