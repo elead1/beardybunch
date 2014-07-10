@@ -11,16 +11,16 @@ weapons: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(12) NOT NULL}
 games: {id INT PRIMARY KEY AUTOINCREMENT, turn INT NOT NULL FK(suspects.id)}
 
 #Tracks which clients are assigned to which suspects for each game.
-player_assignments: {id INT PRIMARY KEY FK(games.id), client_id INT, 
+player_assignments: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), client_id INT,
 	suspect INT NOT NULL FK(suspects.id)}
 
 #Tracks where each suspect is located in each game.
-suspect_locations: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id),
+suspect_locations: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), suspect INT NOT NULL FK(suspects.id),
 	location INT NOT NULL FK(locations.id)}
-	
-#Tracks the selected casefile for each game.
-casefiles: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id), 
-	location INT NOT NULL FK(locations.id), weapon INT NOT NULL FK(weapons.id)}
+
+#Tracks which cards are held by which players for each game. A card held by suspect 0 means it is in the casefile.
+cardholders: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), suspect INT NOT NULL FK(suspects.id),
+    suspect_card_id INT FK(suspects.id), location_card_id INT FK(location.id), weapon_card_id INT FK(weapons.id)}
 
 #Keeps record of which players have been eliminated for each game.
-losing_players: {id INT PRIMARY KEY FK(games.id), suspect INT NOT NULL FK(suspects.id)}
+losing_players: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), suspect INT NOT NULL FK(suspects.id)}
