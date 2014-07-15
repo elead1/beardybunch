@@ -1,5 +1,6 @@
 import sqlite3
 import logging
+import itertools
 import server.DuplicateTokenError
 
 __author__ = 'Eric'
@@ -91,7 +92,15 @@ def set_suspect_location(game_id, suspect, location):
         logging.warning(e.value)
         return
     curs.execute('update suspect_locations set location=? where game_id=? and suspect=?', update_params)
-    connection.close()
+    connection.commit()
+
+'''Moves all suspects to designated starting points for a given game_id.'''
+def initialize_suspect_locations(game_id):
+    orig_locs = [4, 8, 20, 18, 14, 6]
+    suspects = get_suspects()
+    for loc, sus in itertools.zip_longest(orig_locs, suspects):
+        curs.execute('update suspect_locations set location=? where game_id=? and suspect=?', (loc, game_id, sus))
+    connection.commit()
 
 '''Close database connection. SHOULD ONLY BE CALLED ON EXIT OF MAIN CLASS.'''
 def close_db():

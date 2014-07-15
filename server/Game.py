@@ -2,8 +2,10 @@ import os
 import sys
 import random
 import logging
+import Networking.Message as Message
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
+from server.ConnectionManager import ConnectionManager
 
 __author__ = 'Eric'
 
@@ -26,10 +28,12 @@ class Game:
             logging.critical(e.value)
             sys.exit(1)
         self._game_id = self.find_game_id()
-        if self._game_id == None:
+        if self._game_id is None:
             print("Failed to create game.")
             logging.INFO("Failed to create game. Exiting.")
             sys.exit(1)
+        #game_id is communication port
+        self.conn_manager = ConnectionManager(self.game_id)
 
         print("Game created with id: ", self._game_id)
         logging.info("Game created with id: ", self._game_id)
@@ -44,4 +48,7 @@ class Game:
     def find_game_id(self):
         return db_access.get_game_id_by_token(self._self_token)
 
-
+    def receive_message(self, message):
+        msg_type = message.get_type()
+        msg_params = message.get_parameters()
+        #do something with the message contents here
