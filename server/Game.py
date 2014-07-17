@@ -2,7 +2,7 @@ import os
 import sys
 import random
 import logging
-import Networking.Message as Message
+import Networking.MessagingInterface as MessagingInterface
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
 from server.ConnectionManager import ConnectionManager
@@ -14,10 +14,11 @@ all the tables in the database for a particular game. Additionally,
 it will make decisions such as what cards should be in the case file,
 making turns proceed, and handling other game-related activities.'''
 
-class Game:
-    _suspect_cards = db_access.get_suspects()
-    _weapon_cards = db_access.get_weapons()
-    _location_cards = db_access.get_locations()
+_suspect_cards = db_access.get_suspects()
+_weapon_cards = db_access.get_weapons()
+_location_cards = db_access.get_locations()
+
+class Game(MessagingInterface):
 
     def __init__(self):
         self._self_token = self.gen_game_token()
@@ -33,7 +34,7 @@ class Game:
             logging.INFO("Failed to create game. Exiting.")
             sys.exit(1)
         #game_id is communication port
-        self.conn_manager = ConnectionManager(self.game_id)
+        self._conn_manager = ConnectionManager(self.game_id)
 
         print("Game created with id: ", self._game_id)
         logging.info("Game created with id: ", self._game_id)
@@ -52,3 +53,6 @@ class Game:
         msg_type = message.get_type()
         msg_params = message.get_parameters()
         #do something with the message contents here
+
+    def send_message(self, message):
+        self._conn_manager.send_message(message)

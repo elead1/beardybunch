@@ -4,7 +4,7 @@ __author__ = 'Eric'
 
 '''Defines message types and provides for the creation and parsing of messages.'''
 
-MESSAGE_TYPES = []
+MESSAGE_TYPES = ['HELLO']
 
 class Message:
 
@@ -23,7 +23,7 @@ class Message:
     def get_type(self):
         return self._message_type
 
-    def get_parameters(self):
+    def get_params(self):
         return self._message_params
 
     def set_type(self, m_type):

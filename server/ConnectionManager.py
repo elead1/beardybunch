@@ -39,6 +39,10 @@ class ConnectionManager:
         for listener in self._connection_listeners:
             listener.receive_message(message)
 
+    def send_message(self, message):
+        for client in self._client_threads:
+            client.send(message)
+
     '''client_id is the hex representation of the md5 hash of the IP address + port'''
     def gen_client_id(self, address_tuple):
         return hashlib.md5(bytearray(address_tuple[0] + str(address_tuple[1]))).hexdigest()

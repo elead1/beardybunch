@@ -22,3 +22,6 @@ class ConnectionThread(threading.Thread):
                 self._manager.on_message_received(msg)
             except ValueError as ve:
                 logging.info("Data received was not proper JSON string.")
+
+    def send(self, message):
+        self._socket.send(message.encode_message())
