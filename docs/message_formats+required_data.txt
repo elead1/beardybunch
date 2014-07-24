@@ -76,7 +76,7 @@ REFUTE,<player>,[<suggest-component-refuted (suspect/room/weapon)>,...]
 Suggestion refuted (server->client):
 REFUTED,<player>,[<suggest-component-refuted>, ...]
 
-Game over, incorrect accusation (server->client)
+Game over, incorrect accusation (server->clients)
 GAMEOVER,<player>
 
 Game over, correct accusation (server->clients)
@@ -91,3 +91,5 @@ CLIENT_READY,<client_id>,<chosen_suspect_name>
 Tells clients game should begin, sends initial location info and card assignments (server->clients)
 START_GAME,<suspect_locations>,<suspect_turn>,<card_assignments>
 
+Moves gamestate to next player's turn (server->clients)
+NEXTTURN,<suspect_turn>
