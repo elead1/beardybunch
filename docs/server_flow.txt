@@ -1,0 +1,76 @@
+Game class starts
+ |
+\ /
+ X
+Spawns Server object
+ |
+\ /
+ X
+Server object listens for client connections
+ |
+\ /
+ X
+Receives connection
+ |
+\ /
+ X
+Sends SERVER_PREGAME to all clients
+ |
+\ /
+ X
+Receives CLIENT_READY
+ |
+\ /
+ X
+Registers new client w/ client_id, marks suspect chosen in DB
+ |
+\ /
+ X
+Sends SERVER_PREGAME to all clients
+ |
+\ /
+ X
+-->Once 3 clients connect, begin countdown to game start
+ |
+\ /
+ X
+After 6 clients connect or countdown expires
+ |
+\ /
+ X
+Assign cards to casefile and clients, put suspects in correct location
+ |
+\ /
+ X
+Send START_GAME to clients
+ |
+\ /
+ X
+BEGIN MAIN GAME LOOP
+ |
+\ /
+ X
+Waits for MOVE from client
+ |
+\ /
+ X
+Update suspect locations in DB, send MOVED to clients
+ |
+\ /
+ X
+Wait for SUGGEST
+ |
+\ /
+ X
+On SUGGEST received:
+send SUGGESTED
+    if accusation:
+        evaluate message params against casefile
+	if correct accusation, send WINNER
+	if incorrect accusation, add client to losing_players table in DB an send GAMEOVER
+    else:
+	for all clients whose turn it is not in turn order:
+        send OFFER_REFUTE to client
+	wait for REFUTE
+	if REFUTE has params:
+	    send REFUTED to client whose turn it is

@@ -61,16 +61,19 @@ MOVE,<player>,<suspect>,<new_location>,[<current_location>?]
 Move response (Server->clients):
 MOVED,<suspect>,<new_location>
 
-Suggest (Client->server)
+Suggest/accusation (Client->server)
 SUGGEST,<player>,<accused>,<room>,<weapon>,<accuse (t/f)>
 
-Suggestion made (Server->clients):
+Suggestion/accusation made (Server->clients):
 SUGGESTED,<accused>,<room>,<weapon>,<accuse (t/f)>
+
+Prompts a player refute a suggestion (server->client)
+OFFER_REFUTE
 
 Refute suggestion (client->server):
 REFUTE,<player>,[<suggest-component-refuted (suspect/room/weapon)>,...]
 
-Suggestion refuted (server->clients):
+Suggestion refuted (server->client):
 REFUTED,<player>,[<suggest-component-refuted>, ...]
 
 Game over, incorrect accusation (server->client)
@@ -78,4 +81,13 @@ GAMEOVER,<player>
 
 Game over, correct accusation (server->clients)
 WINNER,<winning-player>
+
+Upon established connection; countdown time < 0 if not enabled yet (server->clients)
+SERVER_PREGAME,<game_id>,<countdown_time_remaining>,<available_suspects>
+
+Indicates a client is ready and which suspect they have chosen (client->server)
+CLIENT_READY,<client_id>,<chosen_suspect_name>
+
+Tells clients game should begin, sends initial location info and card assignments (server->clients)
+START_GAME,<suspect_locations>,<suspect_turn>,<card_assignments>
 

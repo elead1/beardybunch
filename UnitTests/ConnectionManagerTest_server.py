@@ -2,7 +2,7 @@ __author__ = 'Eric'
 
 import Networking.Message
 import Networking.MessagingInterface
-import server.ConnectionManager.ConnectionManager as ConnectionManager
+import server.Server.ConnectionManager as ConnectionManager
 
 class Server(Networking.MessagingInterface):
     def __init__(self):
