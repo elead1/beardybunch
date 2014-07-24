@@ -1,7 +1,7 @@
 __author__ = 'Eric'
 from abc import ABCMeta, abstractmethod
 
-class MessagingInterface:
+class MessageListener:
     __metaclass__ = ABCMeta
 
     @abstractmethod

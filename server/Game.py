@@ -5,7 +5,8 @@ import logging
 import Networking.MessagingInterface as MessagingInterface
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
-from server.ConnectionManager import ConnectionManager
+from server.Server import ConnectionManager
+from time import sleep
 
 __author__ = 'Eric'
 
@@ -34,11 +35,17 @@ class Game(MessagingInterface):
             logging.INFO("Failed to create game. Exiting.")
             sys.exit(1)
         #game_id is communication port
-        self._conn_manager = ConnectionManager(self.game_id)
+        self.server = ConnectionManager(self.game_id)
 
         print("Game created with id: ", self._game_id)
         logging.info("Game created with id: ", self._game_id)
 
+        while not self.server.should_start_game():
+            #Wait for game to be okay to start.
+            sleep(1)
+
+
+    @staticmethod
     def gen_game_token(self):
         game_tokens = db_access.get_game_tokens()
         g_id = random.randint(0, 0)
@@ -48,11 +55,3 @@ class Game(MessagingInterface):
 
     def find_game_id(self):
         return db_access.get_game_id_by_token(self._self_token)
-
-    def receive_message(self, message):
-        msg_type = message.get_type()
-        msg_params = message.get_parameters()
-        #do something with the message contents here
-
-    def send_message(self, message):
-        self._conn_manager.send_message(message)

@@ -1,0 +1,91 @@
+Client starts
+ |
+\ /
+ X
+Connects to game server on port
+ |
+\ /
+ X
+Receives SERVER_PREGAME
+ |
+\ /
+ X
+UI updates available avatars
+ |
+\ /
+ X
+Player selects avatar and says 'ready'
+ |
+\ /
+ X
+Client sends a CLIENT_READY message
+ |
+\ /
+ X
+Receives SERVER_PREGAME, updates UI to reflect selected suspects
+ |
+\ /
+ X
+Waits for START_GAME
+ |
+\ /
+ X
+Upon receiving START_GAME, moves UI to game board screen, populates assigned card field and turn indicator
+ |
+\ /
+ X
+BEGIN MAIN GAME LOOP
+ |
+\ /
+ X
+If it is this client's turn, enable gameboard for movement
+ |
+\ /
+ X
+Player selects a move to make
+ |
+\ /
+ X
+Client evaluates validity of move:
+if good, moves player, sends MOVE message
+else indicates to player that move is invalid
+ |
+\ /
+ X
+Sends MOVE message
+ |
+\ /
+ X
+Receives MOVED, updates suspect positions on game board
+ |
+\ /
+ X
+If moved into a room, enable suggest and accuse buttons on UI
+ |
+\ /
+ X
+If player clicks suggest, enable mechanism to select components of suggestion
+ |
+\ /
+ X
+When player clicks done, send SUGGEST w/ accuse = false
+ |
+\ /
+ X
+wait for REFUTED
+ |
+\ /
+ X
+if REFUTED has params notify in client history who refuted what
+else if player clicks accuse:
+    enable mechanism to select components
+    when player clicks done, send SUGGEST w/ accuse = true
+ |
+\ /
+ X
+wait for GAMEOVER or WINNER
+ |
+\ /
+ X
+if WINNER received, display victory screen to user
+else if GAMEOVER received, indicate in client history that player is DQ'd
