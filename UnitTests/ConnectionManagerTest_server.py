@@ -1,28 +1,34 @@
 __author__ = 'Eric'
 
-from Networking.Message import Message
-from Networking.MessagingInterface import MessagingInterface
-from server.ConnectionManager import ConnectionManager
+from server.Server import Server
 from time import sleep
 
-class Server(MessagingInterface):
+pings_recvd = 0
+
+class ServerTester():
     def __init__(self):
-        self._connectionmanager = ConnectionManager(5555)
+        pass
 
-        self._connectionmanager.add_connection_listener(self)
-        responses_received = 0
-        while responses_received != 6:
-            sleep(1)
+    def notify_put(self, q):
+        global pings_recvd
+        received = q.get()
+        sender = received['sender']
+        msg = received['message'].decode()
+        sock = received['socket']
+        print "Received payload from ", repr(sender)
+        print "Payload: (" + msg + ")"
+        if msg == 'ping':
+            #sock.sendall('pong'.encode())
+            pings_recvd += 1
 
-    def send_message(self, message):
-        self._connectionmanager.send_message(message)
-
-    def receive_message(self, message):
-        print(message.encode_message())
-        response = Message()
-        response.set_type('HELLO')
-        response.set_params({'message': 'hi from server'})
-        self.send_message(response)
 
 if __name__ == '__main__':
-    s = Server()
+    s = ServerTester()
+    serv = Server(5555, s)
+    serv.start_server()
+    while True:
+        clients = serv.get_clients()
+        for client in clients:
+            serv.send_to(client, "Hello from your server!")
+        sleep(0.5)
+    serv.stop_server()
