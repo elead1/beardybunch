@@ -1,6 +1,7 @@
+from Networking import Server
+
 __author__ = 'Eric'
 
-from server.Server import Server
 from time import sleep
 
 pings_recvd = 0
@@ -28,7 +29,9 @@ if __name__ == '__main__':
     serv.start_server()
     while True:
         clients = serv.get_clients()
+        i = 0
         for client in clients:
-            serv.send_to(client, "Hello from your server!")
+            serv.send_to(client, "Hello from your server, client" + str(i) + "!")
+            i += 1
         sleep(0.5)
     serv.stop_server()

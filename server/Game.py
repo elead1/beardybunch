@@ -1,12 +1,13 @@
-import os
 import sys
 import random
 import logging
+from time import sleep
+
 import Networking.MessagingInterface as MessagingInterface
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
-from server.Server import ConnectionManager
-from time import sleep
+from Networking.Server import ConnectionManager
+
 
 __author__ = 'Eric'
 
