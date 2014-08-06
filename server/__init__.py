@@ -8,7 +8,7 @@ __author__ = 'Eric'
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="ClueServer.log", level=logging.CRITICAL)
-    g = Game()
+    logging.basicConfig(filename="GameServer.log", level=logging.INFO)
+    #g = Game()
     #print(db_access.get_suspect_id_by_name("Plum"))
-    db_access.close_db()
+    #db_access.close_db()
