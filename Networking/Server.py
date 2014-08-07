@@ -125,7 +125,7 @@ class Server:
         logging.info("Closed all sockets.")
 
     #Callback for the ObservableQueue. Just prints out messages. Instantiating object should override this
-    # and register itself as the queue observer using set_message_queue_observer()
+    # and register itself as the queue_observer in the init parameters.
     def notify_put(self, q):
         received = q.get()
         sender = received['sender']

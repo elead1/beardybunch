@@ -1,10 +1,11 @@
-from Networking import Server
+from Networking.Server import Server
+from time import sleep
 
 __author__ = 'Eric'
 
-from time import sleep
 
 pings_recvd = 0
+num_cli = 1
 
 class ServerTester():
     def __init__(self):
@@ -18,20 +19,14 @@ class ServerTester():
         sock = received['socket']
         print "Received payload from ", repr(sender)
         print "Payload: (" + msg + ")"
-        if msg == 'ping':
-            #sock.sendall('pong'.encode())
-            pings_recvd += 1
+        sock.sendall("Server's response!".encode())
 
 
 if __name__ == '__main__':
     s = ServerTester()
     serv = Server(5555, s)
     serv.start_server()
-    while True:
-        clients = serv.get_clients()
-        i = 0
-        for client in clients:
-            serv.send_to(client, "Hello from your server, client" + str(i) + "!")
-            i += 1
+    while serv.get_clients() > 0:
+        num_cli = len(serv.get_clients())
         sleep(0.5)
     serv.stop_server()

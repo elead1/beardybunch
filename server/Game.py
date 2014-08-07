@@ -6,7 +6,6 @@ from time import sleep
 import Networking.MessagingInterface as MessagingInterface
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
-from Networking.Server import ConnectionManager
 
 
 __author__ = 'Eric'
