@@ -4,7 +4,7 @@ from Networking.Client import Client
 
 
 if __name__ == '__main__':
-    c = Client(('127.0.0.1', 5555))
+    c = Client(('127.0.0.1', 2015))
     inpt = None
     while inpt != 'stop':
         inpt = raw_input("Enter message: ")
