@@ -677,11 +677,13 @@ class Game(object):
                         self.selectedWeapon = weaponKey
 
                 self.doneButtonClicked = self.doneButton.pressed(pygame.mouse.get_pos())
-                self.notesButtonClicked = self.notes.pressed(pygame.mouse.get_pos())
+                self.notesButtonClicked = self.notesButton.pressed(pygame.mouse.get_pos())
                 self.suggestButtonClicked = self.suggestButton.pressed(pygame.mouse.get_pos())
                 self.accuseButtonClicked = self.accuseButton.pressed(pygame.mouse.get_pos())
                 self.cancelButtonClicked = self.cancelButton.pressed(pygame.mouse.get_pos())
 
+                if self.gameData['mode'] is 'NOTES':
+                    self.notes.pressed(pygame.mouse.get_pos())
 
             return False
 
@@ -768,7 +770,6 @@ class Game(object):
                 changedMode = True
 
         elif self.gameData['mode'] is 'NOTES':
-            self.notes.pressed(pygame.mouse.get_pos())
             if self.doneButtonClicked:
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = 'PLAY'
@@ -777,6 +778,7 @@ class Game(object):
         #If our turn and we can move, check the room selection, done, the accuse, and the notes buttons.
         elif self.gameData['mode'] is 'PLAY':
             if self.notesButtonClicked:
+                print "Moving to NOTES mode."
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = 'NOTES'
                 changedMode = True
@@ -865,7 +867,7 @@ class Game(object):
                 self.gameData['suspects'][suspectKey]['object'].updateRoom(rect=roomObj.rect, hallway=hallway)
 
             #todo: Update selection of player card for other player turns
-            
+
         elif self.gameData['mode'] is 'END':
             pass
 
