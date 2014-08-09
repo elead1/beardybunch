@@ -6,6 +6,7 @@ from time import sleep
 import server.db_access as db_access
 from server.DuplicateTokenError import DuplicateTokenError
 from Networking.Server import Server
+from Networking.Message import Message
 
 
 __author__ = 'Eric'
@@ -24,6 +25,8 @@ class Game():
 
     def __init__(self):
         self._self_token = self.gen_game_token(self)
+        self.countdown_timer = 45
+        self.num_clients = 0
         try:
             db_access.insert_new_game(self._self_token)
         except DuplicateTokenError as e:
@@ -42,7 +45,7 @@ class Game():
         logging.info("Game created with id {0} on port {1}".format(self._game_id, self._game_id + 2000))
 
         logging.info("Starting connection countdown with timer of 45 seconds.")
-        timer_thread = threading.Thread(target=self.connect_timer, args=(45, ))
+        timer_thread = threading.Thread(target=self.connect_timer)
         timer_thread.start()
         timer_thread.join()
         print "timer_thread joined!"
@@ -60,29 +63,39 @@ class Game():
 
     def notify_put(self, q):
         #spawn thread to handle message
-        print "stuff 'n' stuff from client"
-        pass
+        payload = q.get()
+        handle_thread = threading.Thread(target=self.handle, args=(payload['message'].decode(),))
+        handle_thread.start()
+        handle_thread.join()
+
+    #Called when a new connection is made to the server.
+    def connection_added(self, client_id):
+        #print "got new client!: {0}:{1}".format(client_id[0], client_id[1])
+        serv_pregame = Message()
+        serv_pregame.set_type("SERVER_PREGAME")
+        serv_pregame_params = {'game_id': self._game_id, 'countdown_timer': self.countdown_timer}
+        #Pull available suspects from db, assign to ^
+        serv_pregame.set_params(serv_pregame_params)
+        self.server.send_to_all(serv_pregame.encode_message())
 
     #Thread body to handle client messages; takes decoded message from notify_put and handles it accordingly
     def handle(self, msg):
-        #handle various message types
         pass
 
     #Thread body to handle initial client connections; after 3 connect, waits for 6 to connect or seconds to expire
-    def connect_timer(self, seconds):
-        num_clients = len(self.server.get_clients())
+    def connect_timer(self):
+        self.num_clients = len(self.server.get_clients())
         expired = False
-        while num_clients < 6 and not expired:
-            num_clients = len(self.server.get_clients())
+        while self.num_clients < 6 and not expired:
+            self.num_clients = len(self.server.get_clients())
             #Don't start counting down until 3 clients connect.
-            if num_clients < 3:
+            if self.num_clients < 3:
                 sleep(0.1)
             else:
-                seconds -= 1
-                if seconds <= 1:
+                self.countdown_timer -= 1
+                if self.countdown_timer < 1:
                     expired = True
                 sleep(1)
-                print seconds
 
 
 if __name__ == '__main__':

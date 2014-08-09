@@ -30,8 +30,7 @@ class ObservableQueue(Queue.Queue):
             obs.notify_put(self)
 
 
-'''Function will be the body of a thread; listens for connections and adds them to list.
-TODO: Add logic to restrict to 6 connections/start countdown timer.'''
+#Function will be the body of a thread; listens for connections and adds them to list.
 def get_connections(control_event, sock, connection_list, list_lock, observer):
     global num_clients
     sock.listen(1)
@@ -43,6 +42,7 @@ def get_connections(control_event, sock, connection_list, list_lock, observer):
         #Connection list has socket, name of connection (addr), and an ObservableQueue for handling messages received
         list_lock.acquire()  # Using a lock to ensure the receiver thread's main loop doesn't blow up when the list of clients changes size.
         connection_list[addr] = (conn, addr, obs_q)
+        observer.connection_added(addr)
         list_lock.release()
         num_clients += 1
         sleep(0.1)
