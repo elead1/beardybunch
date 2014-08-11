@@ -31,6 +31,7 @@ class ObservableQueue(Queue.Queue):
 
 
 #Function will be the body of a thread; listens for connections and adds them to list.
+#Entries in list are a tuple: (socket connected to client, client address tuple, queue for received data)
 def get_connections(control_event, sock, connection_list, list_lock, observer):
     global num_clients
     sock.listen(1)
@@ -48,7 +49,12 @@ def get_connections(control_event, sock, connection_list, list_lock, observer):
         sleep(0.1)
 
 
-'''Function will be body of a thread; handles receiving messages from clients.'''
+#Function will be body of a thread; handles receiving messages from clients. If a client is disconnected,
+# its socket is cleanly closed.
+#Whenever data is received from a client, it is packaged into a dictionary and put into the client's queue.
+#Dictionary structure is as follows:
+# * 'sender' specifies address of client
+# * 'message' specifies the actual data received
 def receiver(control_event, connection_list, list_lock):
     global num_clients
     disconnected_clients = []
@@ -71,7 +77,7 @@ def receiver(control_event, connection_list, list_lock):
             else:
                 if len(msg) != 0:
                     #Add message sender, message, and involved socket to queue for processing
-                    cli[2].put({'sender': cli[1], 'message': msg, 'socket': cli[0]})
+                    cli[2].put({'sender': cli[1], 'message': msg})
                 else:
                     disconnected_clients.append(client)
         #Removes disconnected clients; add logic to redistribute cards/notify client DC'd

@@ -86,7 +86,7 @@ Upon established connection; countdown time < 0 if not enabled yet (server->clie
 SERVER_PREGAME,<game_id>,<countdown_time_remaining>,<available_suspects>
 
 Indicates a client is ready and which suspect they have chosen (client->server)
-CLIENT_READY,<client_id>,<chosen_suspect_name>
+CLIENT_READY,<chosen_suspect>
 
 Tells clients game should begin, sends initial location info and card assignments (server->clients)
 START_GAME,<suspect_locations>,<suspect_turn>,<card_assignments>

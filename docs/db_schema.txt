@@ -12,7 +12,7 @@ weapons: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(12) NOT NULL}
 games: {id INT PRIMARY KEY AUTOINCREMENT, self_token INT NOT NULL, turn INT NOT NULL FK(suspects.id)}
 
 #Tracks which clients are assigned to which suspects for each game.
-player_assignments: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), client_id INT,
+player_assignments: {id INT PRIMARY KEY AUTOINCREMENT, game_id INT NOT NULL FK(games.id), client_id text,
 	suspect INT NOT NULL FK(suspects.id)}
 
 #Tracks where each suspect is located in each game.

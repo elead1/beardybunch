@@ -16,7 +16,8 @@ class Message:
         else:
             try:
                 msg = json.loads(json_message)
-            except ValueError:
+            except ValueError, e:
+                print(e)
                 raise ValueError
             self._message_type = msg['type']
             self._message_params = msg['params']
@@ -27,8 +28,11 @@ class Message:
     def get_params(self):
         return self._message_params
 
+    #Returns true if set to parameter successfully,
+    #Returns false if set to NULL.
     def set_type(self, m_type):
         self._message_type = m_type if m_type in MESSAGE_TYPES else 'NULL'
+        return False if self._message_type == 'NULL' else True
 
     def set_params(self, params):
         self._message_params = params

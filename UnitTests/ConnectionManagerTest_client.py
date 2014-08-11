@@ -1,14 +1,20 @@
 __author__ = 'Eric'
-
+from time import sleep
 from Networking.Client import Client
+from Networking.Message import Message
 
 
 if __name__ == '__main__':
-    c = Client(('127.0.0.1', 2022))
+    c = Client(('127.0.0.1', 2009))
     inpt = None
+    resp = c.get_newest_message()
+    print("Response from server: " + repr(resp.decode()))
+    ready = Message()
+    ready.set_type('CLIENT_READY')
+    ready.set_params({'chosen_suspect': 1})
+    c.send_message(ready.encode_message())
     while inpt != 'stop':
-        inpt = raw_input("Enter message: ")
-        c.send_message(inpt)
         resp = c.get_newest_message()
-        print("Response from server: " + repr(resp.decode()))
+        print "Message from server: " + repr(resp.decode())
+        sleep(0.25)
     c.quit()

@@ -23,14 +23,14 @@ def listen_for_messages(sock, control_event, msg_q):
                 logging.error(e)
         except socket.error as e:
             logging.critical("Disconnected from server! So sad :-(")
-            sys.exit(-1)
+            sys.exit(1)
         else:
             if len(msg) != 0:
                 #Add still-encoded message to queue for processing
                 msg_q.put(msg)
             else:
                 logging.critical("Disconnected from server! So sad :-(")
-                sys.exit(-1)
+                sys.exit(1)
 
 class Client:
     def __init__(self, server_addr):
