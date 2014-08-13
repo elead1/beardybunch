@@ -26,13 +26,14 @@ def get_suspects(connection, curs):
 #Returns a map of suspect id->name pairs that are not assigned to players for a game.
 def get_unassigned_suspects(connection, curs, game_id):
     suspect_map = {}
-    curs.execute("select s.id, s.name from suspects s, player_assignments p where p.game_id=? and s.id != p.suspect", (game_id,))
+    curs.execute("select id, name from suspects where id in (select id from suspects except select suspect from player_assignments where game_id=?)", (game_id,))
     avail = curs.fetchall()
     for row in avail:
         suspect_map[row[0]] = row[1]
     return suspect_map
 
 
+#Returns a list of tuples with suspect IDs and client IDs
 def get_suspect_client_assignments(connection, curs, game_id):
     curs.execute("select s.id, p.client_id from suspects s, player_assignments p where p.game_id=? and s.id=p.suspect", (game_id,))
     results = curs.fetchall()
@@ -59,6 +60,13 @@ def get_locations(connection, curs):
         location_map[row[0]] = row[1]
     return location_map
 
+
+#Return a map of rooms and their IDs
+def get_rooms(connection, curs):
+    room_map = {}
+    for row in curs.execute("select l.id, l.name from rooms r, locations l where l.id=r.location_id"):
+        room_map[row[0]] = row[1]
+    return room_map
 
 #Return a list of all active games.
 def get_running_games(connection, curs):
@@ -141,6 +149,17 @@ def assign_suspect(connection, curs, game_id, client, suspect):
     curs.execute('insert into player_assignments (game_id, client_id, suspect) values (?, ?, ?)', params)
     connection.commit()
     pass
+
+
+#Assigns cards to suspects.
+# card_type should be either suspect, weapon, or room
+# card_id is the numerical identifier of the card to assign
+# suspect_id is the numerical identifier of the suspect to assign the card to
+def assign_card(connection, curs, game_id, card_type, suspect_id, card_id):
+    query = "insert into cardholders (game_id, suspect, {0}_card_id) values (?, ?, ?)".format(card_type)
+    params = (game_id, suspect_id, card_id)
+    curs.execute(query, params)
+    connection.commit()
 
 
 #Close database connection. SHOULD ONLY BE CALLED ON EXIT OF MAIN CLASS.

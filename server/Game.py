@@ -21,6 +21,7 @@ init_access = db_access.get_db_access()
 _suspect_cards = db_access.get_suspects(init_access[0], init_access[1])
 _weapon_cards = db_access.get_weapons(init_access[0], init_access[1])
 _location_cards = db_access.get_locations(init_access[0], init_access[1])
+_room_cards = db_access.get_rooms(init_access[0], init_access[1])
 db_access.close_db(init_access[0], init_access[1])
 
 
@@ -60,13 +61,22 @@ class Game():
         timer_thread = threading.Thread(target=self.connect_timer)
         timer_thread.start()
         timer_thread.join()
-        #print "timer_thread joined!"
         while self.readies_received != self.num_clients:
             sleep(0.1)
         logging.info("Finished waiting for clients. Number of clients connected: {0}".format(self.num_clients))
         logging.info("Client identifiers: {0}".format(self.client_md5_map.keys()))
         assigns = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id)
         logging.info("Client avatar assignments: {0}".format(repr(assigns)))
+
+        #Select case file and assign cards to players.
+        self.casefile = self.generate_casefile()
+        #self.assign_cards(self.casefile)
+
+        #db_access.initialize_suspect_locations(self.db[0], self.db[1], self._game_id)
+
+        #Send START_GAME to all clients.
+        sys.exit(0)
+        pass
 
     @staticmethod
     def gen_game_token(self):
@@ -78,6 +88,21 @@ class Game():
 
     def find_game_id(self):
         return db_access.get_game_id_by_token(self.db[0], self.db[1], self._self_token)
+
+    #Chooses which card from each category will make up the case file for this game.
+    def generate_casefile(self):
+        suspect = random.randint(1, len(_suspect_cards.keys()))
+        weapon = random.randint(1, len(_weapon_cards.keys()))
+        room = random.randint(1, len(_room_cards.keys()))
+        db_access.assign_card(self.db[0], self.db[1], self._game_id, 'suspect', 0, suspect)
+        db_access.assign_card(self.db[0], self.db[1], self._game_id, 'weapon', 0, weapon)
+        db_access.assign_card(self.db[0], self.db[1], self._game_id, 'location', 0, room)
+        return suspect, weapon, room
+
+    #Assigns cards to players (actually, to their suspect avatars), skipping those in the casefile.
+    def assign_cards(self, casefile):
+        #assigned_suspects = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id)
+        pass
 
     #q is a Queue that received an entry.
     #q.get() returns that entry.
@@ -141,4 +166,4 @@ class Game():
 
 
 if __name__ == '__main__':
-    g = Game(45)
+    g = Game(5)

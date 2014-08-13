@@ -4,6 +4,9 @@ suspects: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(8) NOT NULL}
 #Enumeration of all locations.
 locations: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(24) NOT NULL}
 
+#Enumeration of named rooms.
+rooms: {id INT PRIMARY KEY AUTOINCREMENT, location_id INT FK(locations.id)}
+
 #Enumeration of all weapons.
 weapons: {id INT PRIMARY KEY AUTOINCREMENT, name VARCHAR(12) NOT NULL}
 
