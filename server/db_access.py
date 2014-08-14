@@ -33,11 +33,14 @@ def get_unassigned_suspects(connection, curs, game_id):
     return suspect_map
 
 
-#Returns a list of tuples with suspect IDs and client IDs
+#Returns a map of suspect IDs->client IDs
 def get_suspect_client_assignments(connection, curs, game_id):
+    suspect_map = {}
     curs.execute("select s.id, p.client_id from suspects s, player_assignments p where p.game_id=? and s.id=p.suspect", (game_id,))
     results = curs.fetchall()
-    return results
+    for row in results:
+        suspect_map[row[0]] = row[1]
+    return suspect_map
 
 #Returns a suspect's ID by name.
 def get_suspect_id_by_name(connection, curs, name):

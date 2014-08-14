@@ -70,7 +70,7 @@ class Game():
 
         #Select case file and assign cards to players.
         self.casefile = self.generate_casefile()
-        #self.assign_cards(self.casefile)
+        self.assign_cards(self.casefile)
 
         #db_access.initialize_suspect_locations(self.db[0], self.db[1], self._game_id)
 
@@ -91,9 +91,9 @@ class Game():
 
     #Chooses which card from each category will make up the case file for this game.
     def generate_casefile(self):
-        suspect = random.randint(1, len(_suspect_cards.keys()))
-        weapon = random.randint(1, len(_weapon_cards.keys()))
-        room = random.randint(1, len(_room_cards.keys()))
+        suspect = random.choice(_suspect_cards.keys())
+        weapon = random.choice(_weapon_cards.keys())
+        room = random.choice(_room_cards.keys())
         db_access.assign_card(self.db[0], self.db[1], self._game_id, 'suspect', 0, suspect)
         db_access.assign_card(self.db[0], self.db[1], self._game_id, 'weapon', 0, weapon)
         db_access.assign_card(self.db[0], self.db[1], self._game_id, 'location', 0, room)
@@ -101,8 +101,43 @@ class Game():
 
     #Assigns cards to players (actually, to their suspect avatars), skipping those in the casefile.
     def assign_cards(self, casefile):
-        #assigned_suspects = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id)
-        pass
+        #Determine who needs cards assigned to them
+        assigned_suspects_ids = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id).keys()
+        #Sort the list so we can deal in turn order
+        assigned_suspects_ids.sort()
+
+        #Collect all the cards; reverse keys and values so keys are card names.
+        all_cards = {}
+        for d in (_suspect_cards, _weapon_cards, _room_cards):
+            for k, v in d.iteritems():
+                all_cards[v] = k
+        #Get keys (i.e. names) for all cards, so we can determine the proper card type for assignment.
+        all_keys = all_cards.keys()
+
+        #Shuffle and assign cards simultaneously
+        suspect_iter = 0
+
+        while all_cards:
+            choice = random.choice(all_keys)
+            #Pick only cards not in casefile.
+            while all_cards[choice] in casefile:
+                choice = random.choice(all_keys)
+            #Determine 'type' of card.
+            if choice in _suspect_cards.values():
+                card_type = 'suspect'
+            elif choice in _weapon_cards.values():
+                card_type = 'weapon'
+            else:
+                card_type = 'location'
+            card = all_cards.pop(choice)
+            db_access.assign_card(self.db[0], self.db[1], self._game_id,
+                                  card_type, assigned_suspects_ids[suspect_iter], card)
+            all_keys.remove(choice)
+            #Assign next card to next suspect
+            suspect_iter += 1
+            #If we've reached end of suspect list, start over
+            if suspect_iter == len(assigned_suspects_ids):
+                suspect_iter = 0
 
     #q is a Queue that received an entry.
     #q.get() returns that entry.
