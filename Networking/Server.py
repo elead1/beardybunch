@@ -64,7 +64,7 @@ def receiver(control_event, connection_list, list_lock):
         for client in connection_list.keys():
             cli = connection_list[client]
             try:
-                msg = cli[0].recv(1024)
+                msg = cli[0].recv(2048)
             #Probably should make this handle things more specifically.
             except socket.timeout as e:
                 err = e.args[0]

@@ -18,7 +18,7 @@ def get_db_access():
 #Return a map of suspects and their IDs
 def get_suspects(connection, curs):
     suspect_map = {}
-    for row in curs.execute("select * from suspects"):
+    for row in curs.execute("select id, name from suspects"):
         suspect_map[row[0]] = row[1]
     return suspect_map
 
@@ -41,6 +41,40 @@ def get_suspect_client_assignments(connection, curs, game_id):
     for row in results:
         suspect_map[row[0]] = row[1]
     return suspect_map
+
+
+#Returns a map of suspect IDs -> list of all assigned card names.
+def get_assigned_cards(connection, curs, game_id):
+    suspect_map = {0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
+    sql_select = "select c.suspect, s.name from cardholders c, {0}s s where c.{0}_card_id=s.id and c.{0}_card_id is not null and c.game_id=?"
+    curs.execute(sql_select.format("suspect"), (game_id,))
+    results = curs.fetchall()
+    for row in results:
+        suspect_map[row[0]].append(row[1])
+    curs.execute(sql_select.format("weapon"), (game_id,))
+    results = curs.fetchall()
+    for row in results:
+        suspect_map[row[0]].append(row[1])
+    curs.execute(sql_select.format("location"), (game_id,))
+    results = curs.fetchall()
+    for row in results:
+        suspect_map[row[0]].append(row[1])
+    return suspect_map
+
+
+#Return a map of suspects->locations for the given game.
+def get_suspect_locations(connection, curs, game_id):
+    suspect_map = {}
+    for row in curs.execute("select suspect, location from suspect_locations where game_id=?", (game_id,)):
+        suspect_map[row[0]] = row[1]
+    return suspect_map
+
+
+#Get current turn for given game.
+def get_turn(connection, curs, game_id):
+    curs.execute("select turn from games where id=?", (game_id,))
+    return curs.fetchall()[0][0]
+
 
 #Returns a suspect's ID by name.
 def get_suspect_id_by_name(connection, curs, name):
@@ -70,6 +104,7 @@ def get_rooms(connection, curs):
     for row in curs.execute("select l.id, l.name from rooms r, locations l where l.id=r.location_id"):
         room_map[row[0]] = row[1]
     return room_map
+
 
 #Return a list of all active games.
 def get_running_games(connection, curs):
@@ -138,9 +173,15 @@ def set_suspect_location(connection, curs, game_id, suspect, location):
 #Moves all suspects to designated starting points for a given game_id.
 def initialize_suspect_locations(connection, curs, game_id):
     orig_locs = [4, 8, 20, 18, 14, 6]
-    suspects = get_suspects()
-    for loc, sus in itertools.zip_longest(orig_locs, suspects):
+    suspects = get_suspects(connection, curs)
+    for loc, sus in itertools.izip_longest(orig_locs, suspects.keys()):
         curs.execute('update suspect_locations set location=? where game_id=? and suspect=?', (loc, game_id, sus))
+    connection.commit()
+
+
+#Update turn tracker, setting the turn value to the given suspect (denoting its that suspect's turn)
+def change_turn(connection, curs, game_id, new_sus_turn):
+    curs.execute("update games set turn=? where id=?", (new_sus_turn, game_id))
     connection.commit()
 
 
@@ -151,7 +192,6 @@ def assign_suspect(connection, curs, game_id, client, suspect):
     params = (game_id, str(client), suspect)
     curs.execute('insert into player_assignments (game_id, client_id, suspect) values (?, ?, ?)', params)
     connection.commit()
-    pass
 
 
 #Assigns cards to suspects.

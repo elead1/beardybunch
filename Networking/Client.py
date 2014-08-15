@@ -13,7 +13,7 @@ __author__ = 'Eric'
 def listen_for_messages(sock, control_event, msg_q):
     while not control_event.is_set():
         try:
-            msg = sock.recv(1024)
+            msg = sock.recv(2048)
         #Probably should make this handle things more specifically.
         except socket.timeout as e:
             err = e.args[0]

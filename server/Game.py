@@ -40,6 +40,9 @@ class Game():
         #Map of (ip, port) client identifying tuples to md5 hashes of ip:port strings (hash used as client id in DB)
         self.client_md5_map = {}
 
+        self.server = None
+        self.casefile = None
+
         try:
             db_access.insert_new_game(self.db[0], self.db[1], self._self_token)
         except DuplicateTokenError as e:
@@ -51,13 +54,19 @@ class Game():
             print "Failed to create game."
             logging.INFO("Failed to create game. Exiting.")
             sys.exit(1)
+        else:
+            print "Game id is: {0}".format(self._game_id)
+            logging.info("Game id: {0}".format(self._game_id))
+
+     #Runs the main body of the Game
+    def game_start(self):
         #game_id + 2000 is communication port (to avoid reserved port nums)
         self.server = Server(self._game_id + 2000, self)
         self.server.start_server()
-        print "Game created with id {0} and on port {1}".format(self._game_id, self._game_id + 2000)
-        logging.info("Game created with id {0} on port {1}".format(self._game_id, self._game_id + 2000))
+        print "Server created on port {0}".format(self._game_id + 2000)
+        logging.info("Server created on port {0}".format(self._game_id + 2000))
 
-        logging.info("Starting connection countdown with timer of 45 seconds.")
+        logging.info("Starting connection countdown with timer of {0} seconds.".format(self.countdown_timer))
         timer_thread = threading.Thread(target=self.connect_timer)
         timer_thread.start()
         timer_thread.join()
@@ -72,9 +81,15 @@ class Game():
         self.casefile = self.generate_casefile()
         self.assign_cards(self.casefile)
 
-        #db_access.initialize_suspect_locations(self.db[0], self.db[1], self._game_id)
+        db_access.initialize_suspect_locations(self.db[0], self.db[1], self._game_id)
 
         #Send START_GAME to all clients.
+        sus_locs = db_access.get_suspect_locations(self.db[0], self.db[1], self._game_id)
+        turn = db_access.get_turn(self.db[0], self.db[1], self._game_id)
+        card_assigns = db_access.get_assigned_cards(self.db[0], self.db[1], self._game_id)
+        params = {'suspect_locations': sus_locs, 'suspect_turn': turn, 'card_assignments': card_assigns}
+        start_game = self.build_message("START_GAME", params)
+        self.server.send_to_all(start_game.encode_message())
         sys.exit(0)
         pass
 
@@ -108,20 +123,19 @@ class Game():
 
         #Collect all the cards; reverse keys and values so keys are card names.
         all_cards = {}
+        i = 0
         for d in (_suspect_cards, _weapon_cards, _room_cards):
             for k, v in d.iteritems():
-                all_cards[v] = k
+                if k != casefile[i]:
+                    all_cards[v] = k
+            i += 1
         #Get keys (i.e. names) for all cards, so we can determine the proper card type for assignment.
         all_keys = all_cards.keys()
 
         #Shuffle and assign cards simultaneously
         suspect_iter = 0
-
         while all_cards:
             choice = random.choice(all_keys)
-            #Pick only cards not in casefile.
-            while all_cards[choice] in casefile:
-                choice = random.choice(all_keys)
             #Determine 'type' of card.
             if choice in _suspect_cards.values():
                 card_type = 'suspect'
@@ -202,3 +216,4 @@ class Game():
 
 if __name__ == '__main__':
     g = Game(5)
+    g.game_start()
