@@ -607,8 +607,9 @@ class Game(object):
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="knife.png", alphaColor=WHITE, border=roomBorder), 'name':'Knife'}}
 
         self.gameData['currentTurn'] = None
-        self.gameData['player'] = {'name':None, 'playerCard':None, 'weaponName':None, 'suspectName':None, 'roomName':None,
-                                   'weaponCard':None, 'suspectCard':None, 'roomCard':None, }
+        # self.gameData['player'] = {'name':None, 'playerCard':None, 'weaponName':None, 'suspectName':None, 'roomName':None,
+        #                            'weaponCard':None, 'suspectCard':None, 'roomCard':None, }
+        self.gameData['player'] = {'name':None, 'playerCard':None, 'cards':{'names':[], 'objects':[]}}
         self.gameData['mode'] = "CHOOSECHAR" # Other modes are PLAY and END
         self.gameData['lastMode'] = "PLAY"
         #Valid playMode settings are: WAIT, ALIBI, TURN, MOVED, ACCUSE, SUGGEST
@@ -619,9 +620,9 @@ class Game(object):
 
         if DEBUGMODE:
             self.gameData['player']['name'] = "PLUM"
-            self.gameData['player']['weaponName'] = "KNIFE"
-            self.gameData['player']['suspectName'] = "SCARLETT"
-            self.gameData['player']['roomName'] = "BILLIARD"
+            self.gameData['player']['cards']['names'].append("KNIFE")
+            self.gameData['player']['cards']['names'].append("SCARLETT")
+            self.gameData['player']['cards']['names'].append("BILLIARD")
             self.gameData['playMode'] = 'TURN'
 
         for suspKey in self.gameData['suspects'].keys():
@@ -699,30 +700,41 @@ class Game(object):
                                                                 y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
                                                                 name=obj.text, suspectColor=obj.suspectColor)
 
-        if not self.gameData['player']['weaponCard'] and self.gameData['player']['weaponName']:
-            obj = self.gameData['weapons'][self.gameData['player']['weaponName']]['card']
-            self.gameData['player']['weaponCard'] = LabeledBox(fillColor=obj.fillColor, text=obj.text,
-                                                                x=infoBoxXOffset+infoBoxWidth-1*90-playerSuspectListSpacer*1,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                height=obj.height, width=obj.width,
+        if not self.gameData['player']['cards']['objects'] and self.gameData['player']['cards']['names']:
+            xVar = infoBoxXOffset+infoBoxWidth-1*90-playerSuspectListSpacer*1
+            yVar = infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90
+            print "xVar is: " + str(xVar)
+
+            for name in self.gameData['player']['cards']['names']:
+                print "xVar is: " + str(xVar)
+                if name in self.gameData['rooms'].keys():
+                    #Its a room, make a room card.
+                    obj = self.gameData['rooms'][name]['object']
+                    self.gameData['player']['cards']['objects'].append(LabeledBox(x=xVar,
+                                                                y=yVar,
+                                                                width=90, height=90,
+                                                                textXOffset=5, textYOffset=40, border=roomBorder,
+                                                                fontSize=14, fillColor=obj.fillColor, text=obj.text))
+                    pass
+                elif name in self.gameData['suspects'].keys():
+                    #It's a suspect, make a suspect card.
+                    obj = self.gameData['suspects'][name]['card']
+                    self.gameData['player']['cards']['objects'].append(SuspectCard(x=xVar, y=yVar,name=obj.text,
+                                                                                   suspectColor=obj.suspectColor))
+                    pass
+                elif name in self.gameData['weapons'].keys():
+                    #It's a weapon, make a weapon card
+                    obj = self.gameData['weapons'][name]['card']
+                    self.gameData['player']['cards']['objects'].append(LabeledBox(fillColor=obj.fillColor, text=obj.text,
+                                                                x=xVar, y=yVar, height=obj.height, width=obj.width,
                                                                 textXOffset=obj.textXOffset,
                                                                 textYOffset=obj.textYOffset,
                                                                 image = obj.imageName, alphaColor=obj.alphaColor,
-                                                                border=obj.border)
-            pass
-        if not self.gameData['player']['suspectCard'] and self.gameData['player']['suspectName']:
-            obj = self.gameData['suspects'][self.gameData['player']['suspectName']]['card']
-            self.gameData['player']['suspectCard'] = SuspectCard(x=infoBoxXOffset+infoBoxWidth-2*90-playerSuspectListSpacer*2,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                name=obj.text, suspectColor=obj.suspectColor)
-
-        if not self.gameData['player']['roomCard'] and self.gameData['player']['roomName']:
-            obj = self.gameData['rooms'][self.gameData['player']['roomName']]['object']
-            self.gameData['player']['roomCard'] = LabeledBox(x=infoBoxXOffset+infoBoxWidth-3*90-playerSuspectListSpacer*3,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                width=90, height=90,
-                                                                textXOffset=5, textYOffset=40, border=roomBorder,
-                                                                fontSize=14, fillColor=obj.fillColor, text=obj.text)
+                                                                border=obj.border))
+                    pass
+                else:
+                    pass
+                xVar = xVar - 90 - playerSuspectListSpacer
 
 
         #Working logic here
@@ -790,7 +802,7 @@ class Game(object):
                     self.gameData['rooms'][self.selectedRoom]['object'].unsetHilight()
 
                 if self.doneButtonClicked:
-                    #TODOSend room move to client here.
+                    #TODO: Send room move to client here.
                     self.gameData['playMode'] = 'MOVED'
 
             elif self.gameData['playMode'] is 'MOVED':
@@ -900,15 +912,19 @@ class Game(object):
             pygame.draw.rect(screen, GREY35, [infoBoxXOffset+roomBorder, infoBoxYOffset+roomBorder,
                                              infoBoxWidth-2*roomBorder, infoBoxHeight-2*roomBorder])
 
+
             if self.gameData['player']['playerCard']:
                 self.gameData['player']['playerCard'].draw(screen)
 
-            if self.gameData['player']['weaponCard']:
-                self.gameData['player']['weaponCard'].draw(screen)
-            if self.gameData['player']['suspectCard']:
-                self.gameData['player']['suspectCard'].draw(screen)
-            if self.gameData['player']['roomCard']:
-                self.gameData['player']['roomCard'].draw(screen)
+            for card in self.gameData['player']['cards']['objects']:
+                card.draw(screen)
+            #
+            # if self.gameData['player']['weaponCard']:
+            #     self.gameData['player']['weaponCard'].draw(screen)
+            # if self.gameData['player']['suspectCard']:
+            #     self.gameData['player']['suspectCard'].draw(screen)
+            # if self.gameData['player']['roomCard']:
+            #     self.gameData['player']['roomCard'].draw(screen)
 
             font = pygame.font.SysFont("", 28)
             screen.blit(font.render("You:", False, BLACK), (infoBoxXOffset+50, infoBoxYOffset+10))
