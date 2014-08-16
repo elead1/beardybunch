@@ -175,7 +175,7 @@ def initialize_suspect_locations(connection, curs, game_id):
     orig_locs = [4, 8, 20, 18, 14, 6]
     suspects = get_suspects(connection, curs)
     for loc, sus in itertools.izip_longest(orig_locs, suspects.keys()):
-        curs.execute('update suspect_locations set location=? where game_id=? and suspect=?', (loc, game_id, sus))
+        curs.execute('insert into suspect_locations (game_id, suspect, location) values (?, ?, ?)', (game_id, sus, loc))
     connection.commit()
 
 
