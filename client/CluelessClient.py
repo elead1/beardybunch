@@ -4,14 +4,16 @@ import pygame
 from pygame.locals import *
 import math
 import sys
+from ClientBackend import ClientBackend
 
+#Define all constants
 DEBUGMODE = True
 
 PI = math.pi
 
 #Define colors
 BLACK = (0, 0, 0)
-RED =  (255, 0, 0)
+RED = (255, 0, 0)
 BROWN = (139, 115, 85)
 TAN = (219, 147, 112)
 GREEN = (0, 255, 0)
@@ -20,7 +22,7 @@ SCARLET = (255, 36, 0)
 MUSTARD = (255, 165, 79)
 PLUM = (71, 60, 139)
 PEACOCK_BLUE = (0, 0, 156)
-SALMON = (255,169,122)
+SALMON = (255, 169, 122)
 # BROWN = ()
 WRENCH_ALPHA = (254, 255, 255)
 
@@ -343,12 +345,14 @@ class LabeledBox(object):
             else: return False
         else: return False
 
+
 class Room(LabeledBox):
     def __init__(self, name, color, x, y, width=roomWidth, height=roomHeight, border=roomBorder):
         super(Room, self).__init__(fillColor=color, x=x+roomBaseXOffset, y=y+roomBaseYOffset,
                                    text=name, width=width, height=height, border=border)
         self.textXOffset=10
         self.textYOffset = self.height-20
+
 
 class Hallway(LabeledBox):
     def __init__(self, color, x, y, vertical = False, width=roomWidth, height=roomHeight, border=roomBorder):
@@ -361,6 +365,7 @@ class Hallway(LabeledBox):
             height = roomHeight / 3
             y += height
         super(Hallway, self).__init__(fillColor=color, x=x+roomBaseXOffset, y=y+roomBaseYOffset, width=width, height=height, border=border)
+
 
 class SuspectCard(LabeledBox):
     def __init__(self, name, suspectColor, x, y, xOffset=0, yOffset=0, fillColor=SALMON, width=90, height=90, border=roomBorder):
@@ -380,7 +385,6 @@ class SuspectCard(LabeledBox):
         self.suspectShouldersYOffset = self.height*0.6
         self.selected= False
         self.available=True
-
 
     def drawMain(self, surface):
         s = pygame.Surface((self.width, self.height))
@@ -543,9 +547,10 @@ class Notes(object):
             if self.notesDict[item].onCheckbox(mouse):
                 self.notesDict[item].changeState()
 
+
 class Game(object):
     def __init__(self):
-
+        self.client = None
         self.all_suspectTokens_list = pygame.sprite.Group()
 
         self.gameData= {'rooms':{'STUDY':{'object':Room("Study", BROWN, x=0, y=0), 'name':'Study'},
@@ -646,9 +651,14 @@ class Game(object):
         self.accuseButtonClicked=False
         self.notes = Notes(x=notesBoxXOffset, y=notesBoxYOffset)
 
+    def setClient(self, client):
+        self.client = client
+
     def updateState(self, stateDict):
         '''This function takes a state dictionary object as an argument and updates the class's internal
         data model.'''
+        for k, v in stateDict:
+            self.gameData[k] = v
 
         pass
 
@@ -874,7 +884,6 @@ class Game(object):
         if not changedMode:
             self.gameData['lastMode'] = self.gameData['mode']
 
-
     def displayFrame(self, screen):
         screen.fill(GREY58)
         if self.gameData['mode'] is "CHOOSECHAR":
@@ -944,6 +953,7 @@ class Game(object):
         self.cursorGroup.draw(screen)
         pygame.display.flip()
 
+
 def main():
 
     # pygame.font.init()
@@ -954,15 +964,15 @@ def main():
     done = False
 
     clock = pygame.time.Clock()
-    # print "Room dimensions are: " + str(roomHeight) + ", " + str(roomWidth)
 
     game = Game()
-
+    client = ClientBackend(game)
+    game.setClient(client)
 
     while not done:
         #Process events
         done = game.processEvents()
-        #Game logic to pudate positions, check collisions
+        #Game logic to update positions, check collisions
         game.runLogic()
         #Draw the frame
         game.displayFrame(DISPLAYSURF)
