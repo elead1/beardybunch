@@ -5,7 +5,7 @@ __author__ = 'Eric'
 '''Defines message types and provides for the creation and parsing of messages.'''
 
 MESSAGE_TYPES = ['SERVER_PREGAME', 'CLIENT_READY', 'START_GAME', 'MOVE', 'MOVED', 'SUGGEST', 'SUGGESTED',
-                 'OFFERREFUTE', 'REFUTE', 'REFUTED', 'DONE', 'GAMEOVER', 'WINNER']
+                 'OFFERREFUTE', 'REFUTE', 'REFUTED', 'DONE', 'GAMEOVER', 'WINNER', 'NEXTTURN']
 
 class Message:
 

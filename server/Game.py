@@ -39,6 +39,10 @@ class Game():
         self.readies_received = 0
         #Map of (ip, port) client identifying tuples to md5 hashes of ip:port strings (hash used as client id in DB)
         self.client_md5_map = {}
+        #Tracks which suspects were picked by players
+        self.assigned_suspects = {}
+        #Tracks turns
+        self.turn = 0
 
         self.server = None
         self.casefile = None
@@ -71,7 +75,6 @@ class Game():
         timer_thread.start()
         timer_thread.join()
         while self.readies_received != self.num_clients:
-            print "{0} vs {1}".format(self.readies_received, self.num_clients)
             sleep(0.1)
         logging.info("Finished waiting for clients. Number of clients connected: {0}".format(self.num_clients))
         logging.info("Client identifiers: {0}".format(self.client_md5_map.keys()))
@@ -86,9 +89,15 @@ class Game():
 
         #Send START_GAME to all clients.
         sus_locs = db_access.get_suspect_locations(self.db[0], self.db[1], self._game_id).values()
-        turn = db_access.get_turn(self.db[0], self.db[1], self._game_id)
+        #Logic to pick first player. Necessary if < 6 players.
+        self.turn = db_access.get_turn(self.db[0], self.db[1], self._game_id)
+        if self.turn not in self.assigned_suspects.keys():
+            assigned_susp_keys = self.assigned_suspects.keys()
+            assigned_susp_keys.sort()
+            self.turn = assigned_susp_keys[0]
+            db_access.change_turn(self.db[0], self.db[1], self._game_id, self.turn)
         card_assigns = db_access.get_assigned_cards(self.db[0], self.db[1], self._game_id)
-        params = {'suspect_locations': sus_locs, 'suspect_turn': turn, 'card_assignments': card_assigns}
+        params = {'suspect_locations': sus_locs, 'suspect_turn': self.turn, 'card_assignments': card_assigns}
         start_game = Game.build_message("START_GAME", params)
         self.server.send_to_all(start_game.encode_message())
         sys.exit(0)
@@ -118,7 +127,8 @@ class Game():
     #Assigns cards to players (actually, to their suspect avatars), skipping those in the casefile.
     def assign_cards(self, casefile):
         #Determine who needs cards assigned to them
-        assigned_suspects_ids = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id).keys()
+        self.assigned_suspects = db_access.get_suspect_client_assignments(self.db[0], self.db[1], self._game_id)
+        assigned_suspects_ids = self.assigned_suspects.keys()
         #Sort the list so we can deal in turn order
         assigned_suspects_ids.sort()
 
@@ -182,15 +192,35 @@ class Game():
     def handle(self, sender, msg):
         db = db_access.get_db_access()
         m = Message(msg)
+        params = m.get_params()
         if m.get_type() == 'CLIENT_READY':
             client_id = self.client_md5_map[sender]
-            params = m.get_params()
             db_access.assign_suspect(db[0], db[1], self._game_id, client_id, params['chosen_suspect'])
             avail_susp = db_access.get_unassigned_suspects(db[0], db[1], self._game_id)
-            params = {'game_id': self._game_id, 'countdown_timer': self.countdown_timer, 'avail_susp': avail_susp.keys()}
+            params = {'game_id': self._game_id, 'num_connected': self.num_clients, 'countdown_timer': self.countdown_timer, 'avail_susp': avail_susp.keys()}
             m = Game.build_message("SERVER_PREGAME", params)
             self.server.send_to_all(m.encode_message())
             self.readies_received += 1
+        elif m.get_type() == 'MOVE':
+            db_access.set_suspect_location(db[0], db[1], self._game_id, params['suspect'], params['new_location'])
+            moved_msg = Game.build_message('MOVED', params)
+            self.server.send_to_all(moved_msg.encode_message())
+        elif m.get_type() == 'DONE':
+            print "Received done."
+            current_turn = self.turn
+            sorted_assigned_suspects = self.assigned_suspects.keys()
+            sorted_assigned_suspects.sort()
+            #If current turn is the last suspect in turn order, go to first suspect in turn order
+            if current_turn == sorted_assigned_suspects[len(sorted_assigned_suspects) - 1]:
+                new_turn = sorted_assigned_suspects[0]
+            else:
+                new_turn = sorted_assigned_suspects[sorted_assigned_suspects.index(current_turn) + 1]
+            self.turn = new_turn
+            db_access.change_turn(db[0], db[1], self._game_id, self.turn)
+            params = {'suspect_turn': self.turn}
+            nextturn_msg = Game.build_message('NEXTTURN', params)
+            self.server.send_to_all(nextturn_msg.encode_message())
+            pass
         db_access.close_db(db[0], db[1])
 
     #Thread body to handle initial client connections; after 3 connect, waits for 6 to connect or seconds to expire
@@ -211,10 +241,11 @@ class Game():
         self.server.stop_accepting()
 
     @staticmethod
-    def build_message(m_type, param):
+    def build_message(m_type, param=None):
         m = Message()
         m.set_type(m_type)
-        m.set_params(param)
+        if param:
+            m.set_params(param)
         return m
 
     @staticmethod

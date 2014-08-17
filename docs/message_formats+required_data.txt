@@ -56,7 +56,7 @@ Valid-Moves (Matrix):
 21: 20, 16, 1
 
 Move message (Client->server):
-MOVE,<player>,<suspect>,<new_location>,[<current_location>?]
+MOVE,<suspect>,<new_location>
 
 Move response (Server->clients):
 MOVED,<suspect>,<new_location>

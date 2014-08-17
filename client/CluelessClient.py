@@ -526,7 +526,7 @@ class TextBox(object):
 
 class Notes(object):
 
-    def __init__(self,x, y):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
         items = ['PLUM', 'SCARLET', 'WHITE', 'GREEN', 'PEACOCK', 'MUSTARD', 'ROPE', 'LEAD PIPE', 'WRENCH', 'REVOLVER', 'CANDLESTICK',
@@ -633,6 +633,7 @@ class Game(object):
         self.gameData['lastMode'] = "PLAY"
         #Valid playMode settings are: WAIT, ALIBI, TURN, MOVED, ACCUSE, SUGGEST
         self.gameData['playMode'] = 'WAIT'
+        self.gameData['lastPlayMode'] = 'WAIT'
 
         self.gameData['textBox'] = TextBox(text="Player Log", x=midScreenLogX, y=midScreenLogY,
                                            width=playerCardBoxWidth, height=playerCardBoxHeight*2)
@@ -678,8 +679,6 @@ class Game(object):
         for k, v in stateDict:
             self.gameData[k] = v
 
-        pass
-
     def processEvents(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -716,14 +715,14 @@ class Game(object):
                 self.accuseButtonClicked = self.accuseButton.pressed(pygame.mouse.get_pos())
                 self.cancelButtonClicked = self.cancelButton.pressed(pygame.mouse.get_pos())
 
-                if self.gameData['mode'] is 'NOTES':
+                if self.gameData['mode'] == 'NOTES':
                     self.notes.pressed(pygame.mouse.get_pos())
 
             return False
 
     def runLogic(self):
-        self.cursor.update()
         changedMode = False
+        self.cursor.update()
         #TODO: Pull status from client if necessary
 
         #Add any missing player/weapon/suspect cards to the info box
@@ -772,8 +771,8 @@ class Game(object):
 
         #Working logic here
         #First check to see if we just had a mode change, move graphics as needed
-        if self.gameData['mode'] is "PLAY":
-            if self.gameData['lastMode'] is "CHOOSECHAR":
+        if self.gameData['mode'] == "PLAY":
+            if self.gameData['lastMode'] == "CHOOSECHAR":
                 print "Now play, was choosechar"
                 for suspectKey in self.gameData['suspects'].keys():
                     self.gameData['suspects'][suspectKey]['card'].updateXYRef(newX=playerSuspectListXOffset,
@@ -786,30 +785,29 @@ class Game(object):
 
                 self.gameData['suspects'][playerKey]['object'].updateRoom(
                     self.gameData['rooms'][self.gameData['suspects'][playerKey]['room']]['object'].rect)
-        elif self.gameData['mode'] is "CHOOSECHAR":
-            if self.gameData['lastMode'] is "PLAY":
+        elif self.gameData['mode'] == "CHOOSECHAR":
+            if self.gameData['lastMode'] == "PLAY":
                 for suspectKey in self.gameData['suspects'].keys():
                     self.gameData['suspects'][suspectKey]['card'].updateXYRef(newX=(1440 - playerCardBoxWidth) / 2,
                                                                               newY=(900 - playerCardBoxHeight) / 2)
-        elif self.gameData['mode'] is "END":
-            if self.gameData['lastMode'] is "PLAY":
+        elif self.gameData['mode'] == "END":
+            if self.gameData['lastMode'] == "PLAY":
                 self.gameData['textBox'].updateRect(x=midScreenLogX, y=midScreenLogY)
                 if DEBUGMODE:
                     self.gameData['textBox'].setText("A WINNER IS YOU!")
 
         #Now that we have our mode stuff set right,
         #If in choose character mode,
-        if self.gameData['mode'] is 'CHOOSECHAR':
+        if self.gameData['mode'] == 'CHOOSECHAR':
             if self.selectedSuspect and self.gameData['suspects'][self.selectedSuspect]['card'].getAvailable():
                 for suspectKey in self.gameData['suspects'].keys():
                     self.gameData['suspects'][suspectKey]['card'].unsetSelected()
-                #todo: Send selected player info to client. Make sure it's OK.
                 # print "Setting selected on: " + str(self.selectedSuspect)
                 self.gameData['suspects'][self.selectedSuspect]['card'].setSelected()
             else:
                 self.selectedSuspect = None
             if self.selectedSuspect and self.doneButtonClicked:
-                #todo: We have a character choiceSend this info to the client and a check in, move to the next mode.
+                #We have a character choice; send this info to the client and a check in, move to the next mode.
                 self.client.suspect_picked_char_select(self.selectedSuspect)
                 self.selectedSuspect = None
             if self.doneButtonClicked and self.startGame:
@@ -817,33 +815,36 @@ class Game(object):
                 self.gameData['mode'] = "PLAY"
                 changedMode = True
 
-        elif self.gameData['mode'] is 'NOTES':
+        elif self.gameData['mode'] == 'NOTES':
             if self.doneButtonClicked:
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = 'PLAY'
                 changedMode = True
 
         #If our turn and we can move, check the room selection, done, the accuse, and the notes buttons.
-        elif self.gameData['mode'] is 'PLAY':
+        elif self.gameData['mode'] == 'PLAY':
             if self.notesButtonClicked:
                 print "Moving to NOTES mode."
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = 'NOTES'
                 changedMode = True
 
-            elif self.gameData['playMode'] is 'TURN':
+            elif self.gameData['playMode'] == 'TURN':
                 if self.selectedRoom:
                     for roomKey in self.gameData['rooms'].keys():
                         self.gameData['rooms'][roomKey]['object'].unsetHilight()
                     self.gameData['rooms'][self.selectedRoom]['object'].unsetHilight()
 
-                if self.doneButtonClicked:
-                    #TODO: Send room move to client here.
-                    self.gameData['playMode'] = 'MOVED'
+                    if self.doneButtonClicked:
+                        if self.client.player_moved_ok(self.selectedRoom):
+                            self.gameData['playMode'] = 'MOVED'
+                            self.doneButtonClicked = False
 
-            elif self.gameData['playMode'] is 'MOVED':
+            elif self.gameData['playMode'] == 'MOVED':
                 if self.doneButtonClicked:
                     #TODO:Send client message to move to next player
+                    self.client.turn_done()
+                    self.gameData['lastPlayMode'] = 'MOVED'
                     #Reset all hilights.
                     for weaponKey in self.gameData['weapons'].keys():
                         self.gameData['weapons'][weaponKey]['card'].unsetHilight()
@@ -851,6 +852,9 @@ class Game(object):
                         self.gameData['suspects'][suspectKey]['card'].unsetHilight()
                     for roomKey in self.gameData['rooms'].keys():
                         self.gameData['rooms'][roomKey]['object'].unsetHilight()
+                    self.selectedSuspect = None
+                    self.selectedRoom = None
+                    self.selectedWeapon = None
                     self.gameData['playMode'] = 'WAIT'
 
                 elif self.suggestButtonClicked:
@@ -862,7 +866,7 @@ class Game(object):
                     #Collect accusation info and send to client
                     pass
 
-            elif self.gameData['playMode'] is 'SUGGEST':
+            elif self.gameData['playMode'] == 'SUGGEST':
                 #Collect info for suggestion
 
                 if self.selectedWeapon:
@@ -880,7 +884,7 @@ class Game(object):
                     #todo: Send this to the client for suggestion verification
                     pass
 
-            elif self.gameData['playMode'] is 'ACCUSE':
+            elif self.gameData['playMode'] == 'ACCUSE':
                 #Collect info for accusation
 
                 if self.selectedWeapon:
@@ -903,7 +907,7 @@ class Game(object):
                     #todo: Send this to the client for accusation verification
                     pass
 
-            elif self.gameData['playMode'] is 'ALIBI':
+            elif self.gameData['playMode'] == 'ALIBI':
                 if self.selectedCard:
                     for card in self.gameData['players']['cards']['objects']:
                         card.unsetHilight()
@@ -922,7 +926,7 @@ class Game(object):
 
             #todo: Update selection of player card for other player turns
 
-        elif self.gameData['mode'] is 'END':
+        elif self.gameData['mode'] == 'END':
             pass
 
         if not changedMode:
@@ -930,7 +934,7 @@ class Game(object):
 
     def displayFrame(self, screen):
         screen.fill(GREY58)
-        if self.gameData['mode'] is "CHOOSECHAR":
+        if self.gameData['mode'] == "CHOOSECHAR":
             pygame.draw.rect(screen, BLACK, [(1440-playerCardBoxWidth)/2, (900-playerCardBoxHeight)/2,
                                              playerCardBoxWidth, playerCardBoxHeight])
             pygame.draw.rect(screen, BROWN, [(1440-playerCardBoxWidth)/2+roomBorder, (900-playerCardBoxHeight)/2+roomBorder,
@@ -939,11 +943,11 @@ class Game(object):
                 self.gameData['suspects'][suspectKey]['card'].draw(screen)
             self.gameData['textBox'].draw(screen)
             self.doneButton.draw(screen)
-        elif self.gameData['mode'] is "END":
+        elif self.gameData['mode'] == "END":
             self.gameData['textBox'].draw(screen)
             self.doneButton.draw(screen)
 
-        elif self.gameData['mode'] is "PLAY":
+        elif self.gameData['mode'] == "PLAY":
             for roomKey in self.gameData['rooms'].keys():
                 self.gameData['rooms'][roomKey]['object'].draw(screen)
 
