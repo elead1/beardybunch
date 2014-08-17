@@ -50,7 +50,10 @@ class Client:
         self.listen_thread.start()
 
     def get_newest_message(self):
-        return self.receive_queue.get()
+        if self.receive_queue.empty():
+            return None
+        else:
+            return self.receive_queue.get()
 
     def send_message(self, message):
         return self.sock.sendall(message.encode())

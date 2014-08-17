@@ -7,7 +7,7 @@ import sys
 from ClientBackend import ClientBackend
 
 #Define all constants
-DEBUGMODE = True
+DEBUGMODE = False
 
 PI = math.pi
 
@@ -65,10 +65,11 @@ weaponCardListYOffset = playerSuspectListYOffset + playerSuspectListSpacer + pla
 weaponCardBoxWidth = playerCardBoxWidth
 weaponCardBoxHeight = playerCardBoxHeight
 
-infoBoxXOffset = 850
+infoBoxXOffset = 775
 infoBoxYOffset = 25
-infoBoxWidth = 500
+infoBoxWidth = 665
 infoBoxHeight = 150
+infoBoxSpacer = 3
 
 playLogX = weaponCardListXOffset
 playLogY = weaponCardListYOffset + weaponCardBoxHeight + playerSuspectListSpacer
@@ -83,8 +84,8 @@ PLUM_OFFSET=(playerXOffset, playerYOffset)
 PEACOCK_OFFSET=(PLUM_OFFSET[0]+playerWidth+playerXSpacer,PLUM_OFFSET[1])
 MUSTARD_OFFSET=(PEACOCK_OFFSET[0]+playerWidth+playerXSpacer, PLUM_OFFSET[1])
 GREEN_OFFSET=(playerXOffset, playerYOffset+playerHeight+playerYSpacer)
-SCARLETT_OFFSET=(GREEN_OFFSET[0]+playerWidth+playerXSpacer, GREEN_OFFSET[1])
-WHITE_OFFSET=(SCARLETT_OFFSET[0]+playerWidth+playerXSpacer, GREEN_OFFSET[1])
+SCARLET_OFFSET=(GREEN_OFFSET[0]+playerWidth+playerXSpacer, GREEN_OFFSET[1])
+WHITE_OFFSET=(SCARLET_OFFSET[0]+playerWidth+playerXSpacer, GREEN_OFFSET[1])
 
 cursorHeight = 10
 cursorWidth = 10
@@ -176,7 +177,7 @@ class Button(object):
             if mouse[1] > self.rect.topleft[1]:
                 if mouse[0] < self.rect.bottomright[0]:
                     if mouse[1] < self.rect.bottomright[1]:
-                        print "Some button was pressed!"
+                        #print "Some button was pressed!"
                         return True
                     else: return False
                 else: return False
@@ -197,7 +198,7 @@ class SuspectToken(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         if roomRect:
             self.updateRoom(roomRect)
-        print "Initial layout of color: " + str( color) + " at: " + str(self.rect)
+        #print "Initial layout of color: " + str( color) + " at: " + str(self.rect)
         # self.layer=3
 
     def updateRoom(self, rect, hallway=False):
@@ -275,7 +276,7 @@ class LabeledBox(object):
         self.imageYOffset = imageYOffset
         self.imageName = image
         if image:
-            print "Opening image: " + str(image)
+            #print "Opening image: " + str(image)
             self.image = pygame.image.load(image) #.convert()
             if not self.image:
                 print "Problem loading image."
@@ -338,7 +339,7 @@ class LabeledBox(object):
             if mouse[1] > self.rect.topleft[1]:
                 if mouse[0] < self.rect.bottomright[0]:
                     if mouse[1] < self.rect.bottomright[1]:
-                        print str(self.text) + " box was pressed!"
+                        #print str(self.text) + " box was pressed!"
                         return True
                     else: return False
                 else: return False
@@ -513,15 +514,18 @@ class TextBox(object):
         else:
             self.text=""
 
+    def getText(self):
+        return self.text
+
 class Notes(object):
 
     def __init__(self,x, y):
         self.x = x
         self.y = y
-        items = ['PLUM', 'SCARLETT', 'WHITE', 'GREEN', 'PEACOCK', 'MUSTARD', 'ROPE', 'PIPE', 'WRENCH', 'PISTOL', 'CANDLESTICK',
-         'KNIFE', 'STUDY', 'HALL', 'LOUNGE', 'LIBRARY', 'BILLIARD ROOM', 'DINING ROOM', 'CONSERVATORY', 'BALL ROOM', 'KITCHEN']
+        items = ['PLUM', 'SCARLET', 'WHITE', 'GREEN', 'PEACOCK', 'MUSTARD', 'ROPE', 'LEAD PIPE', 'WRENCH', 'REVOLVER', 'CANDLESTICK',
+         'KNIFE', 'STUDY', 'HALL', 'LOUNGE', 'LIBRARY', 'BILLIARD', 'DINING', 'CONSERVATORY', 'BALLROOM', 'KITCHEN']
 
-        self.notesDict ={}
+        self.notesDict = {}
         counter = 10
         for item in items:
             self.notesDict[item] = Checkbox(x = self.x+10, y = self.y+counter, text=item)
@@ -547,12 +551,15 @@ class Notes(object):
             if self.notesDict[item].onCheckbox(mouse):
                 self.notesDict[item].changeState()
 
+    def setChecked(self, item):
+        self.notesDict[item].changeState()
+
 
 class Game(object):
     def __init__(self):
         self.client = None
         self.all_suspectTokens_list = pygame.sprite.Group()
-
+        self.startGame = False
         self.gameData= {'rooms':{'STUDY':{'object':Room("Study", BROWN, x=0, y=0), 'name':'Study'},
                                  'HWAY1':{'object':Hallway(GREY, x=roomWidth, y=0), 'name':'Hallway'},
                                  'HALL':{'object':Room("Hall", GREY, x=2*roomWidth, y=0), 'name':'Hall'},
@@ -569,16 +576,16 @@ class Game(object):
                                  'HWAY8':{'object':Hallway(GREY, vertical = True, x=0, y=roomHeight*3), 'name':'Hallway'},
                                  'HWAY9':{'object':Hallway(GREY, vertical = True, y=roomHeight*3, x=roomWidth*2), 'name':'Hallway'},
                                  'HWAY10':{'object':Hallway(GREY, vertical = True, y=roomHeight*3, x = roomWidth*4), 'name':'Hallway'},
-                                 'CONSERV':{'object':Room("Conservatory", BROWN, x=0, y=roomHeight*4), 'name':'Conservatory'},
+                                 'CONSERVATORY':{'object':Room("Conservatory", BROWN, x=0, y=roomHeight*4), 'name':'Conservatory'},
                                  'HWAY11':{'object':Hallway(GREY, y=roomHeight*4, x=roomWidth), 'name':'Hallway'},
-                                 'BALL':{'object':Room("Ball Room", MUSTARD, y=roomHeight*4, x=roomWidth*2), 'name':'Ball Room'},
+                                 'BALLROOM':{'object':Room("Ball Room", MUSTARD, y=roomHeight*4, x=roomWidth*2), 'name':'Ball Room'},
                                  'HWAY12':{'object':Hallway(GREY, y=roomHeight*4, x=roomWidth*3), 'name':'Hallway'},
                                  'KITCHEN':{'object':Room("Kitchen", GREEN, y=roomHeight*4, x=roomWidth*4),'name':'Kitchen'},},}
         self.gameData['suspects'] = {'PLUM':{'object':SuspectToken(PLUM, PLUM_OFFSET), 'name':'Mr. Plum', 'room':'STUDY',
                                              'card':SuspectCard(name="Plum", suspectColor=PLUM, x=playerSuspectListXOffset, y=playerSuspectListYOffset, xOffset=0*90+1*playerSuspectListSpacer,
                                                                 yOffset=0*90+1*playerSuspectListSpacer)},
-                                    'SCARLETT':{'object':SuspectToken(SCARLET, SCARLETT_OFFSET), 'name':'Ms. Scarlett', 'room':'HALL',
-                                             'card':SuspectCard(name='Scarlett', suspectColor=SCARLET, x=playerSuspectListXOffset, y=playerSuspectListYOffset, xOffset=1*90+2*playerSuspectListSpacer,
+                                    'SCARLET':{'object':SuspectToken(SCARLET, SCARLET_OFFSET), 'name':'Ms. Scarlet', 'room':'HALL',
+                                             'card':SuspectCard(name='Scarlet', suspectColor=SCARLET, x=playerSuspectListXOffset, y=playerSuspectListYOffset, xOffset=1*90+2*playerSuspectListSpacer,
                                                                 yOffset=0*90+1*playerSuspectListSpacer)},
                                     'GREEN':{'object':SuspectToken(GREEN, GREEN_OFFSET), 'name':'Mr. Green', 'room':'HWAY3',
                                              'card':SuspectCard(name='Green', suspectColor=GREEN,x=playerSuspectListXOffset, y=playerSuspectListYOffset, xOffset=2*90+3*playerSuspectListSpacer,
@@ -595,16 +602,16 @@ class Game(object):
         self.gameData['weapons'] = {'ROPE':{'card':LabeledBox(fillColor=RED, text="Rope", height=90, width=90, textXOffset = 10, textYOffset = 5,
                                                               x=weaponCardListXOffset+playerSuspectListSpacer,
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="noose.png", alphaColor=WHITE, border=roomBorder), 'name':'Rope'},
-                                    'PIPE':{'card':LabeledBox(fillColor=RED, text="Lead Pipe", height=90, width=90,textXOffset = 10, textYOffset = 5,
+                                    'LEAD PIPE':{'card':LabeledBox(fillColor=RED, text="Lead Pipe", height=90, width=90,textXOffset = 10, textYOffset = 5,
                                                               x=weaponCardListXOffset+1*90+2*playerSuspectListSpacer,
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="pipe.png", border=roomBorder), 'name':'Lead Pipe'},
                                     'WRENCH':{'card':LabeledBox(fillColor=RED, text="Wrench", height=90, width=90,textXOffset = 10, textYOffset = 5,
                                                               x=weaponCardListXOffset+2*90+3*playerSuspectListSpacer,
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="wrench.png", alphaColor=WRENCH_ALPHA, border=roomBorder), 'name':'Wrench'},
-                                    'PISTOL':{'card':LabeledBox(fillColor=RED, text="Pistol", height=90, width=90, textXOffset = 10, textYOffset = 5,
+                                    'REVOLVER':{'card':LabeledBox(fillColor=RED, text="Pistol", height=90, width=90, textXOffset = 10, textYOffset = 5,
                                                               x=weaponCardListXOffset+3*90+4*playerSuspectListSpacer,
-                                                              y=weaponCardListYOffset+playerSuspectListSpacer, image="pistol.png", border=roomBorder), 'name':'Pistol'},
-                                    'STICK':{'card':LabeledBox(fillColor=RED, text="C. stick", height=90, width=90, textXOffset = 10, textYOffset = 5,
+                                                              y=weaponCardListYOffset+playerSuspectListSpacer, image="pistol.png", border=roomBorder), 'name':'Revolver'},
+                                    'CANDLESTICK':{'card':LabeledBox(fillColor=RED, text="C. stick", height=90, width=90, textXOffset = 10, textYOffset = 5,
                                                               x=weaponCardListXOffset+4*90+5*playerSuspectListSpacer,
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="candlestick.png", border=roomBorder), 'name':'Candlestick'},
                                     'KNIFE':{'card':LabeledBox(fillColor=RED, text="Knife", height=90, width=90,textXOffset = 10, textYOffset = 5,
@@ -612,8 +619,9 @@ class Game(object):
                                                               y=weaponCardListYOffset+playerSuspectListSpacer, image="knife.png", alphaColor=WHITE, border=roomBorder), 'name':'Knife'}}
 
         self.gameData['currentTurn'] = None
-        self.gameData['player'] = {'name':None, 'playerCard':None, 'weaponName':None, 'suspectName':None, 'roomName':None,
-                                   'weaponCard':None, 'suspectCard':None, 'roomCard':None, }
+        # self.gameData['player'] = {'name':None, 'playerCard':None, 'weaponName':None, 'suspectName':None, 'roomName':None,
+        #                            'weaponCard':None, 'suspectCard':None, 'roomCard':None, }
+        self.gameData['player'] = {'name': None, 'playerCard': None, 'cards': {'names': [], 'objects': []}}
         self.gameData['mode'] = "CHOOSECHAR" # Other modes are PLAY and END
         self.gameData['lastMode'] = "PLAY"
         #Valid playMode settings are: WAIT, ALIBI, TURN, MOVED, ACCUSE, SUGGEST
@@ -624,19 +632,22 @@ class Game(object):
 
         if DEBUGMODE:
             self.gameData['player']['name'] = "PLUM"
-            self.gameData['player']['weaponName'] = "KNIFE"
-            self.gameData['player']['suspectName'] = "SCARLETT"
-            self.gameData['player']['roomName'] = "BILLIARD"
+            self.gameData['player']['cards']['names'].append("KNIFE")
+            self.gameData['player']['cards']['names'].append("SCARLETT")
+            self.gameData['player']['cards']['names'].append("BILLIARD")
+            self.gameData['player']['cards']['names'].append("STICK")
+            self.gameData['player']['cards']['names'].append("GREEN")
+            self.gameData['player']['cards']['names'].append("HALL")
             self.gameData['playMode'] = 'TURN'
 
         for suspKey in self.gameData['suspects'].keys():
             self.all_suspectTokens_list.add(self.gameData['suspects'][suspKey]['object'])
 
-        self.doneButton = Button(color=(255,255,255), width=0, height=50, length=100,  text='Done', x=1240, y=840)
-        self.notesButton = Button(color=(255,255,255), width=0, height=50, length=100,  text='Notes', x=1000, y=840)
-        self.suggestButton = Button(color=(255,255,255), width=0, height=50, length=100,  text='Suggest', x=1000, y=770)
-        self.accuseButton = Button(color=(255,255,255), width=0, height=50, length=100,  text='Accuse', x=1240, y=770)
-        self.cancelButton = Button(color=(255,255,255), width=0, height=50, length=100,  text='Cancel', x=1120, y=840)
+        self.doneButton = Button(color=(255, 255, 255), width=0, height=50, length=100, text='Done', x=1240, y=840)
+        self.notesButton = Button(color=(255, 255, 255), width=0, height=50, length=100, text='Notes', x=1000, y=840)
+        self.suggestButton = Button(color=(255, 255, 255), width=0, height=50, length=100, text='Suggest', x=1000, y=770)
+        self.accuseButton = Button(color=(255, 255, 255), width=0, height=50, length=100, text='Accuse', x=1240, y=770)
+        self.cancelButton = Button(color=(255, 255, 255), width=0, height=50, length=100, text='Cancel', x=1120, y=840)
 
         self.cursor = Cursor()
         self.cursorGroup = pygame.sprite.GroupSingle()
@@ -648,7 +659,7 @@ class Game(object):
         self.cancelButtonClicked = False
         self.suggestButtonClicked = False
         self.notesButtonClicked = False
-        self.accuseButtonClicked=False
+        self.accuseButtonClicked = False
         self.notes = Notes(x=notesBoxXOffset, y=notesBoxYOffset)
 
     def setClient(self, client):
@@ -686,6 +697,12 @@ class Game(object):
                     if self.gameData['weapons'][weaponKey]['card'].pressed(pygame.mouse.get_pos()):
                         self.selectedWeapon = weaponKey
 
+                for card in self.gameData['player']['cards']['objects']:
+                    if card.pressed(pygame.mouse.get_pos()):
+                        cardKey = self.gameData['player']['cards']['objects'].index(card)
+                        self.selectedCard = self.gameData['player']['cards']['names'][cardKey]
+                        print "Clicked player card: " + str(self.selectedCard)
+
                 self.doneButtonClicked = self.doneButton.pressed(pygame.mouse.get_pos())
                 self.notesButtonClicked = self.notesButton.pressed(pygame.mouse.get_pos())
                 self.suggestButtonClicked = self.suggestButton.pressed(pygame.mouse.get_pos())
@@ -709,30 +726,42 @@ class Game(object):
                                                                 y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
                                                                 name=obj.text, suspectColor=obj.suspectColor)
 
-        if not self.gameData['player']['weaponCard'] and self.gameData['player']['weaponName']:
-            obj = self.gameData['weapons'][self.gameData['player']['weaponName']]['card']
-            self.gameData['player']['weaponCard'] = LabeledBox(fillColor=obj.fillColor, text=obj.text,
-                                                                x=infoBoxXOffset+infoBoxWidth-1*90-playerSuspectListSpacer*1,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                height=obj.height, width=obj.width,
+        if not self.gameData['player']['cards']['objects'] and self.gameData['player']['cards']['names']:
+            xVar = infoBoxXOffset+infoBoxWidth-1*90-infoBoxSpacer*1
+            yVar = infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90
+            #print "xVar is: " + str(xVar)
+
+            for name in self.gameData['player']['cards']['names']:
+                #print "xVar is: " + str(xVar)
+                if name in self.gameData['rooms'].keys():
+                    #Its a room, make a room card.
+                    obj = self.gameData['rooms'][name]['object']
+                    self.gameData['player']['cards']['objects'].append(LabeledBox(x=xVar,
+                                                                y=yVar,
+                                                                width=90, height=90,
+                                                                textXOffset=5, textYOffset=40, border=roomBorder,
+                                                                fontSize=14, fillColor=obj.fillColor, text=obj.text))
+                    pass
+                elif name in self.gameData['suspects'].keys():
+                    #It's a suspect, make a suspect card.
+                    obj = self.gameData['suspects'][name]['card']
+                    self.gameData['player']['cards']['objects'].append(SuspectCard(x=xVar, y=yVar,name=obj.text,
+                                                                                   suspectColor=obj.suspectColor))
+                    pass
+                elif name in self.gameData['weapons'].keys():
+                    #It's a weapon, make a weapon card
+                    obj = self.gameData['weapons'][name]['card']
+                    self.gameData['player']['cards']['objects'].append(LabeledBox(fillColor=obj.fillColor, text=obj.text,
+                                                                x=xVar, y=yVar, height=obj.height, width=obj.width,
                                                                 textXOffset=obj.textXOffset,
                                                                 textYOffset=obj.textYOffset,
                                                                 image = obj.imageName, alphaColor=obj.alphaColor,
-                                                                border=obj.border)
-            pass
-        if not self.gameData['player']['suspectCard'] and self.gameData['player']['suspectName']:
-            obj = self.gameData['suspects'][self.gameData['player']['suspectName']]['card']
-            self.gameData['player']['suspectCard'] = SuspectCard(x=infoBoxXOffset+infoBoxWidth-2*90-playerSuspectListSpacer*2,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                name=obj.text, suspectColor=obj.suspectColor)
-
-        if not self.gameData['player']['roomCard'] and self.gameData['player']['roomName']:
-            obj = self.gameData['rooms'][self.gameData['player']['roomName']]['object']
-            self.gameData['player']['roomCard'] = LabeledBox(x=infoBoxXOffset+infoBoxWidth-3*90-playerSuspectListSpacer*3,
-                                                                y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
-                                                                width=90, height=90,
-                                                                textXOffset=5, textYOffset=40, border=roomBorder,
-                                                                fontSize=14, fillColor=obj.fillColor, text=obj.text)
+                                                                border=obj.border))
+                    pass
+                else:
+                    print "Wrong name: {0}".format(name)
+                    pass
+                xVar = xVar - 90 - infoBoxSpacer
 
 
         #Working logic here
@@ -754,8 +783,8 @@ class Game(object):
         elif self.gameData['mode'] is "CHOOSECHAR":
             if self.gameData['lastMode'] is "PLAY":
                 for suspectKey in self.gameData['suspects'].keys():
-                    self.gameData['suspects'][suspectKey]['card'].updateXYRef(newX=(1440-playerCardBoxWidth)/2,
-                                                                              newY=(900-playerCardBoxHeight)/2)
+                    self.gameData['suspects'][suspectKey]['card'].updateXYRef(newX=(1440 - playerCardBoxWidth) / 2,
+                                                                              newY=(900 - playerCardBoxHeight) / 2)
         elif self.gameData['mode'] is "END":
             if self.gameData['lastMode'] is "PLAY":
                 self.gameData['textBox'].updateRect(x=midScreenLogX, y=midScreenLogY)
@@ -775,6 +804,9 @@ class Game(object):
                 self.selectedSuspect = None
             if self.selectedSuspect and self.doneButtonClicked:
                 #todo: We have a character choiceSend this info to the client and a check in, move to the next mode.
+                self.client.suspect_picked_char_select(self.selectedSuspect)
+                self.selectedSuspect = None
+            if self.doneButtonClicked and self.startGame:
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = "PLAY"
                 changedMode = True
@@ -800,7 +832,7 @@ class Game(object):
                     self.gameData['rooms'][self.selectedRoom]['object'].unsetHilight()
 
                 if self.doneButtonClicked:
-                    #TODOSend room move to client here.
+                    #TODO: Send room move to client here.
                     self.gameData['playMode'] = 'MOVED'
 
             elif self.gameData['playMode'] is 'MOVED':
@@ -858,7 +890,7 @@ class Game(object):
                 if self.selectedRoom:
                     for roomKey in self.gameData['rooms'].keys():
                         self.gameData['rooms'][roomKey]['object'].unsetHilight()
-                    self.gameData['rooms'][self.selectedRoom]['object'].unsetHilight()
+                    self.gameData['rooms'][self.selectedRoom]['object'].setHilight()
 
                 if self.selectedSuspect and self.selectedWeapon and self.selectedRoom and self.doneButtonClicked:
                     #we have everything for the accusation.
@@ -866,6 +898,12 @@ class Game(object):
                     pass
 
             elif self.gameData['playMode'] is 'ALIBI':
+                if self.selectedCard:
+                    for card in self.gameData['players']['cards']['objects']:
+                        card.unsetHilight()
+                    self.gameData['players']['cards']['objects'][
+                        self.gameData['players']['cards']['names'].index(self.selectedCard)].setHilight()
+                    print "The selected alibi card is: " + self.selectedCard
                 #todo: Make the player cards available for clicking
                 pass
 
@@ -912,16 +950,19 @@ class Game(object):
             if self.gameData['player']['playerCard']:
                 self.gameData['player']['playerCard'].draw(screen)
 
-            if self.gameData['player']['weaponCard']:
-                self.gameData['player']['weaponCard'].draw(screen)
-            if self.gameData['player']['suspectCard']:
-                self.gameData['player']['suspectCard'].draw(screen)
-            if self.gameData['player']['roomCard']:
-                self.gameData['player']['roomCard'].draw(screen)
+            for card in self.gameData['player']['cards']['objects']:
+                card.draw(screen)
+            #
+            # if self.gameData['player']['weaponCard']:
+            #     self.gameData['player']['weaponCard'].draw(screen)
+            # if self.gameData['player']['suspectCard']:
+            #     self.gameData['player']['suspectCard'].draw(screen)
+            # if self.gameData['player']['roomCard']:
+            #     self.gameData['player']['roomCard'].draw(screen)
 
             font = pygame.font.SysFont("", 28)
-            screen.blit(font.render("You:", False, BLACK), (infoBoxXOffset+50, infoBoxYOffset+10))
-            screen.blit(font.render("Your cards:", False, BLACK), (infoBoxXOffset+infoBoxWidth*0.57, infoBoxYOffset+10))
+            screen.blit(font.render("You:", False, BLACK), (infoBoxXOffset+25, infoBoxYOffset+10))
+            screen.blit(font.render("Your cards:", False, BLACK), (infoBoxXOffset+infoBoxWidth*0.50, infoBoxYOffset+10))
 
             # Draw background rect for suspect boxes
             pygame.draw.rect(screen, BLACK, [playerSuspectListXOffset, playerSuspectListYOffset,
@@ -966,7 +1007,7 @@ def main():
     clock = pygame.time.Clock()
 
     game = Game()
-    client = ClientBackend(game)
+    client = ClientBackend((sys.argv[1], int(sys.argv[2])), game)
     game.setClient(client)
 
     while not done:

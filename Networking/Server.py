@@ -164,3 +164,7 @@ class Server:
     def get_clients(self):
         clients = self.connections.keys()
         return clients
+
+    def stop_accepting(self):
+        self.server_sock.close()
+        self.server_event.set()

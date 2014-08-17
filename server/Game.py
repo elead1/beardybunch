@@ -71,6 +71,7 @@ class Game():
         timer_thread.start()
         timer_thread.join()
         while self.readies_received != self.num_clients:
+            print "{0} vs {1}".format(self.readies_received, self.num_clients)
             sleep(0.1)
         logging.info("Finished waiting for clients. Number of clients connected: {0}".format(self.num_clients))
         logging.info("Client identifiers: {0}".format(self.client_md5_map.keys()))
@@ -84,11 +85,11 @@ class Game():
         db_access.initialize_suspect_locations(self.db[0], self.db[1], self._game_id)
 
         #Send START_GAME to all clients.
-        sus_locs = db_access.get_suspect_locations(self.db[0], self.db[1], self._game_id)
+        sus_locs = db_access.get_suspect_locations(self.db[0], self.db[1], self._game_id).values()
         turn = db_access.get_turn(self.db[0], self.db[1], self._game_id)
         card_assigns = db_access.get_assigned_cards(self.db[0], self.db[1], self._game_id)
         params = {'suspect_locations': sus_locs, 'suspect_turn': turn, 'card_assignments': card_assigns}
-        start_game = self.build_message("START_GAME", params)
+        start_game = Game.build_message("START_GAME", params)
         self.server.send_to_all(start_game.encode_message())
         sys.exit(0)
         pass
@@ -167,11 +168,12 @@ class Game():
 
     #Called when a new connection is made to the server.
     def connection_added(self, client_id):
+        self.num_clients = len(self.server.get_clients())
         db = db_access.get_db_access()
         self.client_md5_map[client_id] = hashlib.md5("{0}:{1}".format(client_id[0], client_id[1])).hexdigest()
         avail_susp = db_access.get_unassigned_suspects(db[0], db[1], self._game_id)
-        params = {'game_id': self._game_id, 'countdown_timer': self.countdown_timer, 'avail_susp': avail_susp.keys()}
-        serv_pregame = self.build_message("SERVER_PREGAME", params)
+        params = {'game_id': self._game_id, 'num_connected': self.num_clients, 'countdown_timer': self.countdown_timer, 'avail_susp': avail_susp.keys()}
+        serv_pregame = Game.build_message("SERVER_PREGAME", params)
         self.server.send_to_all(serv_pregame.encode_message())
 
     #Thread body to handle client messages; takes decoded message from notify_put and handles it according to
@@ -186,7 +188,7 @@ class Game():
             db_access.assign_suspect(db[0], db[1], self._game_id, client_id, params['chosen_suspect'])
             avail_susp = db_access.get_unassigned_suspects(db[0], db[1], self._game_id)
             params = {'game_id': self._game_id, 'countdown_timer': self.countdown_timer, 'avail_susp': avail_susp.keys()}
-            m = self.build_message("SERVER_PREGAME", params)
+            m = Game.build_message("SERVER_PREGAME", params)
             self.server.send_to_all(m.encode_message())
             self.readies_received += 1
         db_access.close_db(db[0], db[1])
@@ -204,7 +206,9 @@ class Game():
                 self.countdown_timer -= 1
                 if self.countdown_timer < 1:
                     expired = True
-                sleep(1)
+                else:
+                    sleep(1)
+        self.server.stop_accepting()
 
     @staticmethod
     def build_message(m_type, param):
@@ -213,7 +217,13 @@ class Game():
         m.set_params(param)
         return m
 
+    @staticmethod
+    def flip_map(m):
+        flipped = {}
+        for k, v in m:
+            flipped[v] = k
+        return flipped
 
 if __name__ == '__main__':
-    g = Game(5)
+    g = Game(int(sys.argv[1]))
     g.game_start()

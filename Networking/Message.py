@@ -17,7 +17,7 @@ class Message:
             try:
                 msg = json.loads(json_message)
             except ValueError, e:
-                print(e)
+                print e.message + ": " + json_message
                 raise ValueError
             self._message_type = msg['type']
             self._message_params = msg['params']

@@ -83,7 +83,7 @@ Game over, correct accusation (server->clients)
 WINNER,<winning-player>
 
 Upon established connection; countdown time < 0 if not enabled yet (server->clients)
-SERVER_PREGAME,<game_id>,<countdown_time_remaining>,<available_suspects>
+SERVER_PREGAME,<game_id>,<num_connected>,<countdown_timer>,<avail_susp>
 
 Indicates a client is ready and which suspect they have chosen (client->server)
 CLIENT_READY,<chosen_suspect>
