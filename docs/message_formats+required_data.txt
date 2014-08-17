@@ -65,7 +65,7 @@ Suggest/accusation (Client->server)
 SUGGEST,<player>,<accused>,<room>,<weapon>,<accuse (t/f)>
 
 Suggestion/accusation made (Server->clients):
-SUGGESTED,<accused>,<room>,<weapon>,<accuse (t/f)>
+SUGGESTED,<player>,<accused>,<room>,<weapon>,<accuse (t/f)>
 
 Prompts a player refute a suggestion (server->client)
 OFFERREFUTE
@@ -77,10 +77,7 @@ Suggestion refuted (server->client):
 REFUTED,<player>,[<suggest-component-refuted>, ...]
 
 Game over, incorrect accusation (server->clients)
-GAMEOVER,<player>
-
-Game over, correct accusation (server->clients)
-WINNER,<winning-player>
+GAMEOVER,<player>,<iswinner (t/f)>
 
 Upon established connection; countdown time < 0 if not enabled yet (server->clients)
 SERVER_PREGAME,<game_id>,<num_connected>,<countdown_timer>,<avail_susp>

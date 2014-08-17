@@ -450,7 +450,7 @@ class SuspectCard(LabeledBox):
 
 
 class TextBox(object):
-    def __init__(self, x, y, height, width, text="", textColor=BLACK, font=None, fontSize=20, aa=False, bkg=None):
+    def __init__(self, x, y, height, width, text=[], textColor=BLACK, font=None, fontSize=20, aa=False, bkg=None):
         self.rect = pygame.Rect(x, y, width, height)
         self.x=x
         self.y=y
@@ -472,35 +472,48 @@ class TextBox(object):
             font = pygame.font.SysFont("", self.fontSize)
         # get the height of the font
         fontHeight = font.size("Tg")[1]
-        text = self.text
-        # print "Drawing" + str(text)
-        while text:
-            i = 1
 
-            # determine if the row of text will be outside our area
-            if y + fontHeight > self.rect.bottom:
-                break
 
-            # determine maximum width of line
-            while font.size(text[:i])[0] < self.rect.width and i < len(text):
-                i += 1
+        tList = list(self.text)
+        outOfSpace = False
+        lastLine = 0
+        for lineNum in range(len(tList)):
+            text = tList[lineNum]
+            #print "Writing line: " + text
+            while text:
+                i = 1
 
-            # if we've wrapped the text, then adjust the wrap to the last word
-            if i < len(text):
-                i = text.rfind(" ", 0, i) + 1
+                # determine if the row of text will be outside our area
+                if y + fontHeight > self.rect.bottom:
+                    outOfSpace = True
+                    lastLine = lineNum
+                    break
 
-            # render the line and blit it to the surface
-            if self.bkg:
-                image = font.render(text[:i], 1, self.textColor, self.bkg)
-                image.set_colorkey(self.bkg)
-            else:
-                image = font.render(text[:i], self.aa, self.textColor)
+                # determine maximum width of line
+                while font.size(text[:i])[0] < self.rect.width and i < len(text):
+                    i += 1
 
-            surface.blit(image, (self.rect.left, y))
-            y += fontHeight + lineSpacing
+                # if we've wrapped the text, then adjust the wrap to the last word
+                if i < len(text):
+                    i = text.rfind(" ", 0, i) + 1
 
-            # remove the text we just blitted
-            text = text[i:]
+                # render the line and blit it to the surface
+                if self.bkg:
+                    image = font.render(text[:i], 1, self.textColor, self.bkg)
+                    image.set_colorkey(self.bkg)
+                else:
+                    image = font.render(text[:i], self.aa, self.textColor)
+
+                surface.blit(image, (self.rect.left, y))
+                y += fontHeight + lineSpacing
+
+                # remove the text we just blitted
+                text = text[i:]
+
+        if outOfSpace:
+            #print "Hit out of space."
+            self.text = list(tList[:lineNum])
+            #print "New list is: " + str(self.text)
 
         return text
 
@@ -515,10 +528,7 @@ class TextBox(object):
             self.rect.height = height
 
     def setText(self, text):
-        if text:
-            self.text = text
-        else:
-            self.text=""
+        self.text.insert(0, text)
 
     def getText(self):
         return self.text
@@ -635,7 +645,7 @@ class Game(object):
         self.gameData['playMode'] = 'WAIT'
         self.gameData['lastPlayMode'] = 'WAIT'
 
-        self.gameData['textBox'] = TextBox(text="Player Log", x=midScreenLogX, y=midScreenLogY,
+        self.gameData['textBox'] = TextBox(text=["Player Log"], x=midScreenLogX, y=midScreenLogY,
                                            width=playerCardBoxWidth, height=playerCardBoxHeight*2)
 
         if DEBUGMODE:
@@ -774,6 +784,7 @@ class Game(object):
         if self.gameData['mode'] == "PLAY":
             if self.gameData['lastMode'] == "CHOOSECHAR":
                 print "Now play, was choosechar"
+                self.doneButtonClicked = False
                 for suspectKey in self.gameData['suspects'].keys():
                     self.gameData['suspects'][suspectKey]['card'].updateXYRef(newX=playerSuspectListXOffset,
                                                                               newY=playerSuspectListYOffset)
@@ -842,7 +853,6 @@ class Game(object):
 
             elif self.gameData['playMode'] == 'MOVED':
                 if self.doneButtonClicked:
-                    #TODO:Send client message to move to next player
                     self.client.turn_done()
                     self.gameData['lastPlayMode'] = 'MOVED'
                     #Reset all hilights.
@@ -855,6 +865,7 @@ class Game(object):
                     self.selectedSuspect = None
                     self.selectedRoom = None
                     self.selectedWeapon = None
+                    self.doneButtonClicked = False
                     self.gameData['playMode'] = 'WAIT'
 
                 elif self.suggestButtonClicked:
@@ -864,7 +875,12 @@ class Game(object):
                 elif self.accuseButtonClicked:
                     #Verify player can accuse
                     #Collect accusation info and send to client
-                    pass
+                    if "HWAY" in self.gameData['suspects'][self.gameData['player']['name']]['room']:
+                        self.gameData['textBox'].setText("Must be in room to accuse.")
+                    else:
+                        self.gameData['lastPlayMode'] = self.gameData['playMode']
+                        self.gameData['playMode'] = 'ACCUSE'
+                        self.gameData['textBox'].setText("Select a suspect, weapon, and location and click DONE to make an accusation.")
 
             elif self.gameData['playMode'] == 'SUGGEST':
                 #Collect info for suggestion
@@ -905,6 +921,8 @@ class Game(object):
                 if self.selectedSuspect and self.selectedWeapon and self.selectedRoom and self.doneButtonClicked:
                     #we have everything for the accusation.
                     #todo: Send this to the client for accusation verification
+                    self.client.accusation_made(self.selectedSuspect, self.selectedWeapon, self.selectedRoom)
+                    self.doneButtonClicked = False
                     pass
 
             elif self.gameData['playMode'] == 'ALIBI':

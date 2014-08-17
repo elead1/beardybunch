@@ -43,6 +43,8 @@ class Game():
         self.assigned_suspects = {}
         #Tracks turns
         self.turn = 0
+        #Tracks suspect IDs of disqualified players
+        self.losers = []
 
         self.server = None
         self.casefile = None
@@ -202,25 +204,40 @@ class Game():
             self.server.send_to_all(m.encode_message())
             self.readies_received += 1
         elif m.get_type() == 'MOVE':
+            #Disregard movement from clients whose turn it is not
+            if params['suspect'] != self.turn:
+                return
             db_access.set_suspect_location(db[0], db[1], self._game_id, params['suspect'], params['new_location'])
             moved_msg = Game.build_message('MOVED', params)
             self.server.send_to_all(moved_msg.encode_message())
         elif m.get_type() == 'DONE':
-            print "Received done."
-            current_turn = self.turn
-            sorted_assigned_suspects = self.assigned_suspects.keys()
-            sorted_assigned_suspects.sort()
-            #If current turn is the last suspect in turn order, go to first suspect in turn order
-            if current_turn == sorted_assigned_suspects[len(sorted_assigned_suspects) - 1]:
-                new_turn = sorted_assigned_suspects[0]
-            else:
-                new_turn = sorted_assigned_suspects[sorted_assigned_suspects.index(current_turn) + 1]
-            self.turn = new_turn
+            self.turn = self.next_turn()
             db_access.change_turn(db[0], db[1], self._game_id, self.turn)
             params = {'suspect_turn': self.turn}
             nextturn_msg = Game.build_message('NEXTTURN', params)
             self.server.send_to_all(nextturn_msg.encode_message())
-            pass
+        elif m.get_type() == 'SUGGEST':
+            suggested_msg = Game.build_message('SUGGESTED', params)
+            self.server.send_to_all(suggested_msg.encode_message())
+            db_access.set_suspect_location(db[0], db[1], self._game_id, params['accused'], params['room'])
+            if params['accuse']:
+                gameover_params = {'player': params['player'], 'iswinner': False}
+                #Chicken dinner
+                if params['accused'] == self.casefile[0] and params['weapon'] == self.casefile[1] and params['room'] == self.casefile[2]:
+                    gameover_params['iswinner'] = True
+                else:
+                    #Change turns.
+                    self.turn = self.next_turn()
+                    db_access.change_turn(db[0], db[1], self._game_id, self.turn)
+                    #Mark incorrect player as DQed
+                    db_access.add_loser(db[0], db[1], self._game_id, params['player'])
+                    self.losers.append(params['player'])
+                winner_msg = Game.build_message('GAMEOVER', gameover_params)
+                self.server.send_to_all(winner_msg.encode_message())
+                #If game continues, notify clients of next turn.
+                if not gameover_params['iswinner']:
+                    nextturn_msg = Game.build_message('NEXTTURN', {'suspect_turn': self.turn})
+                    self.server.send_to_all(nextturn_msg.encode_message())
         db_access.close_db(db[0], db[1])
 
     #Thread body to handle initial client connections; after 3 connect, waits for 6 to connect or seconds to expire
@@ -239,6 +256,18 @@ class Game():
                 else:
                     sleep(1)
         self.server.stop_accepting()
+
+    def next_turn(self):
+        current_turn = self.turn
+        sorted_assigned_suspects = self.assigned_suspects.keys()
+        sorted_assigned_suspects.sort()
+        active_players = [susp for susp in sorted_assigned_suspects if susp not in self.losers]
+        #If current turn is the last suspect in turn order, go to first suspect in turn order
+        if current_turn == active_players[len(active_players) - 1]:
+            new_turn = active_players[0]
+        else:
+            new_turn = active_players[active_players.index(current_turn) + 1]
+        return new_turn
 
     @staticmethod
     def build_message(m_type, param=None):

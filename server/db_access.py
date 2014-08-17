@@ -205,6 +205,11 @@ def assign_card(connection, curs, game_id, card_type, suspect_id, card_id):
     connection.commit()
 
 
+def add_loser(connection, curs, game_id, suspect):
+    query = "insert into losing_players (game_id, suspect) values (?, ?)"
+    curs.execute(query, (game_id, suspect))
+    connection.commit()
+
 #Close database connection. SHOULD ONLY BE CALLED ON EXIT OF MAIN CLASS.
 def close_db(connection, curs):
     curs.close()
