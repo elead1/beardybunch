@@ -101,6 +101,7 @@ DISPLAYSURF = pygame.display.set_mode(screen_size)
 
 pygame.init()
 
+
 class Cursor(pygame.sprite.Sprite):
     """This class represents the Cursor"""
 
@@ -124,6 +125,7 @@ class Cursor(pygame.sprite.Sprite):
 
     def printPosition(self):
         print "cursor is at position: " + str(self.rect.x) + ", " + str(self.rect.y)
+
 
 class Button(object):
     def __init__(self, color, x, y, length, height, text, width=0, text_color = (0,0,0), font_size=22):
@@ -184,6 +186,7 @@ class Button(object):
             else: return False
         else: return False
 
+
 class SuspectToken(pygame.sprite.Sprite):
     def __init__(self, color, playerOffset=(0,0), roomRect=None):
         super(SuspectToken, self).__init__()
@@ -210,6 +213,7 @@ class SuspectToken(pygame.sprite.Sprite):
         else:
             self.rect.left = self.playerOffset[0] + rect.x
             self.rect.top = self.playerOffset[1] + rect.y
+
 
 class Checkbox():
     def __init__(self, x, y, text, checked = False):
@@ -254,6 +258,7 @@ class Checkbox():
 
     def getY(self):
         return self.checkboxRect.y
+
 
 class LabeledBox(object):
     def __init__(self, fillColor, x, y, width, height, image=None, alphaColor = None, imageXOffset=None, imageYOffset=None,
@@ -443,6 +448,7 @@ class SuspectCard(LabeledBox):
     def getAvailable(self):
         return self.available
 
+
 class TextBox(object):
     def __init__(self, x, y, height, width, text="", textColor=BLACK, font=None, fontSize=20, aa=False, bkg=None):
         self.rect = pygame.Rect(x, y, width, height)
@@ -516,6 +522,7 @@ class TextBox(object):
 
     def getText(self):
         return self.text
+
 
 class Notes(object):
 
@@ -763,7 +770,6 @@ class Game(object):
                     pass
                 xVar = xVar - 90 - infoBoxSpacer
 
-
         #Working logic here
         #First check to see if we just had a mode change, move graphics as needed
         if self.gameData['mode'] is "PLAY":
@@ -946,6 +952,7 @@ class Game(object):
                                              infoBoxWidth, infoBoxHeight])
             pygame.draw.rect(screen, GREY35, [infoBoxXOffset+roomBorder, infoBoxYOffset+roomBorder,
                                              infoBoxWidth-2*roomBorder, infoBoxHeight-2*roomBorder])
+
 
             if self.gameData['player']['playerCard']:
                 self.gameData['player']['playerCard'].draw(screen)
