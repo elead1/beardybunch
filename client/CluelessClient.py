@@ -739,7 +739,7 @@ class Game(object):
         #Add any missing player/weapon/suspect cards to the info box
         if not self.gameData['player']['playerCard'] and self.gameData['player']['name']:
             obj = self.gameData['suspects'][self.gameData['player']['name']]['card']
-            self.gameData['player']['playerCard'] = SuspectCard(x=infoBoxXOffset+playerSuspectListSpacer*3,
+            self.gameData['player']['playerCard'] = SuspectCard(x=infoBoxXOffset+infoBoxSpacer,
                                                                 y=infoBoxYOffset+infoBoxHeight-playerSuspectListSpacer-90,
                                                                 name=obj.text, suspectColor=obj.suspectColor)
 
@@ -846,7 +846,7 @@ class Game(object):
                 if self.selectedRoom:
                     for roomKey in self.gameData['rooms'].keys():
                         self.gameData['rooms'][roomKey]['object'].unsetHilight()
-                    self.gameData['rooms'][self.selectedRoom]['object'].unsetHilight()
+                    self.gameData['rooms'][self.selectedRoom]['object'].setHilight()
 
                     if self.doneButtonClicked:
                         if self.client.player_moved_ok(self.selectedRoom):
