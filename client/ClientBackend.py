@@ -36,6 +36,8 @@ class ClientBackend():
         self.my_loc = None
         self.timer_remaining = -1
         self.timer_thread = None
+        self.suggested_components = {'accused': None, 'room': None, 'weapon': None}
+        self.refuted = False
 
         self.receiver_thread = threading.Thread(target=self.recv_msg)
         self.receiver_thread.start()
@@ -57,9 +59,6 @@ class ClientBackend():
         if not room_occupied and locations[new_room] in valid_moves[locations[old_room]]:
             self.ui.gameData['lastPlayMode'] = 'TURN'
             self.my_loc = new_room
-            old_room = "hallway" if "HWAY" in old_room else old_room
-            new_room = "hallway" if "HWAY" in new_room else new_room
-            self.ui.gameData['textBox'].setText("{0} moved from {1} to {2}.".format(self.assigned_suspect, old_room, new_room))
             params = {'suspect': suspects[self.assigned_suspect], 'new_location': locations[self.my_loc]}
             moved_msg = ClientBackend.build_message('MOVE', params)
             self.comms.send_message(moved_msg.encode_message())
@@ -79,12 +78,39 @@ class ClientBackend():
         accuse_msg = ClientBackend.build_message('SUGGEST', params)
         self.comms.send_message(accuse_msg.encode_message())
 
+    def suggestion_made(self, susp, weapon):
+        room = self.ui.gameData['suspects'][self.assigned_suspect]['room']
+        params = {'player': suspects[self.assigned_suspect], 'accused': suspects[susp], 'room': locations[room],
+                  'weapon': weapons[weapon], 'accuse': False}
+        suggest_msg = ClientBackend.build_message('SUGGEST', params)
+        self.comms.send_message(suggest_msg.encode_message())
+
+    def process_alibi(self, card):
+        params = {'player': suspects[self.assigned_suspect], 'refuted_component': None}
+        if card in suspects.keys():
+            params['refuted_component'] = 'suspect'
+        elif card in locations.keys():
+            params['refuted_component'] = 'room'
+        elif card in weapons.keys():
+            params['refuted_component'] = 'weapon'
+        refute_msg = ClientBackend.build_message('REFUTE', params)
+        self.comms.send_message(refute_msg.encode_message())
+        if params['refuted_component']:
+            self.ui.gameData['textBox'].setText("You suggested the {0} part of the suggestion was wrong."
+                                                .format(params['refuted_component']))
+        else:
+            self.ui.gameData['textBox'].setText("You were unable to disprove the suggestion.")
+        self.ui.gameData['lastPlayMode'] = self.ui.gameData['playMode']
+        self.ui.gameData['playMode'] = 'WAIT'
+
     def run_game(self):
         while True:
             if self.ui.gameData['mode'] == 'PLAY':
-                if self.ui.gameData['currentTurn'] == self.assigned_suspect and self.ui.gameData['lastPlayMode'] == 'WAIT':
-                    self.ui.gameData['playMode'] = 'TURN'
+                #if self.ui.gameData['currentTurn'] == self.assigned_suspect and self.ui.gameData['lastPlayMode'] == 'WAIT':
+                #    self.ui.gameData['playMode'] = 'TURN'
                 if self.ui.gameData['playMode'] == 'WAIT':
+                    if self.ui.gameData['currentTurn'] == self.assigned_suspect:
+                        self.ui.gameData['playMode'] = 'TURN'
                     pass
                 if self.ui.gameData['playMode'] == 'TURN':
                     pass
@@ -135,12 +161,20 @@ class ClientBackend():
             self.my_loc = self.ui.gameData['suspects'][self.assigned_suspect]['room']
             self.ui.startGame = True
         elif m.get_type() == "MOVED":
+            old_room = self.ui.gameData['suspects'][flipped_suspects[params['suspect']]]['room']
+            new_room = flipped_locations[params['new_location']]
             self.ui.gameData['suspects'][flipped_suspects[params['suspect']]]['room'] = flipped_locations[params['new_location']]
+            old_room = "hallway" if "HWAY" in old_room else old_room
+            new_room = "hallway" if "HWAY" in new_room else new_room
+            self.ui.gameData['textBox'].setText("{0} moved from {1} to {2}.".format(flipped_suspects[params['suspect']], old_room, new_room))
         elif m.get_type() == "NEXTTURN":
+            self.refuted = False
             self.ui.gameData['currentTurn'] = flipped_suspects[params['suspect_turn']]
             self.note_turn_change()
         elif m.get_type() == "SUGGESTED":
             self.ui.gameData['suspects'][flipped_suspects[params['accused']]]['room'] = flipped_locations[params['room']]
+            if flipped_suspects[params['accused']] == self.assigned_suspect:
+                self.my_loc = flipped_locations[params['room']]
             if params['accuse']:
                 self.ui.gameData['textBox'].setText("{0} accuses {1} of the murder with the {2} in the {3}!"
                                                     .format(flipped_suspects[params['player']],
@@ -153,6 +187,32 @@ class ClientBackend():
                                                             flipped_suspects[params['accused']],
                                                             flipped_weapons[params['weapon']],
                                                             flipped_locations[params['room']]))
+        elif m.get_type() == 'OFFERREFUTE':
+            #If we're being asked to refute...
+            if params['player'] == suspects[self.assigned_suspect]:
+                self.suggested_components['accused'] = flipped_suspects[params['accused']]
+                self.suggested_components['room'] = flipped_locations[params['room']]
+                self.suggested_components['weapon'] = flipped_weapons[params['weapon']]
+                self.ui.gameData['textBox'].setText("Your turn to debunk the suggestion, if you can!")
+                self.ui.gameData['lastPlayMode'] = self.ui.gameData['playMode']
+                self.ui.gameData['playMode'] = 'ALIBI'
+        elif m.get_type() == 'REFUTED':
+            if params['player'] == suspects[self.assigned_suspect]:
+                self.refuted = True
+                if params['refuted_component']:
+                    self.ui.gameData['textBox'].setText("The {0} component of your suggestion was refuted."
+                                                        .format(params['refuted_component']))
+                else:
+                    self.ui.gameData['textBox'].setText("Your suggestion was NOT refuted.")
+                self.ui.gameData['lastPlayMode'] = self.ui.gameData['playMode']
+                self.ui.gameData['playMode'] = 'MOVED'
+            else:
+                if params['refuted_component']:
+                    self.ui.gameData['textBox'].setText("{0}'s suggestion was refuted!"
+                                                        .format(flipped_suspects[params['player']]))
+                else:
+                    self.ui.gameData['textBox'].setText("{0}'s suggestion was NOT refuted!"
+                                                        .format(flipped_suspects[params['player']]))
         elif m.get_type() == 'GAMEOVER':
             if params['iswinner']:
                 self.ui.gameData['lastMode'] = self.ui.gameData['mode']

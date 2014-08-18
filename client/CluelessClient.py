@@ -673,6 +673,7 @@ class Game(object):
         self.selectedRoom = None
         self.selectedSuspect = None
         self.selectedWeapon = None
+        self.selectedCard = None
         self.doneButtonClicked = False
         self.cancelButtonClicked = False
         self.suggestButtonClicked = False
@@ -831,6 +832,7 @@ class Game(object):
                 self.gameData['lastMode'] = self.gameData['mode']
                 self.gameData['mode'] = 'PLAY'
                 changedMode = True
+                self.doneButtonClicked = False
 
         #If our turn and we can move, check the room selection, done, the accuse, and the notes buttons.
         elif self.gameData['mode'] == 'PLAY':
@@ -868,15 +870,21 @@ class Game(object):
                     self.doneButtonClicked = False
                     self.gameData['playMode'] = 'WAIT'
 
-                elif self.suggestButtonClicked:
-                    #Verify player is not in a hallway
-                    #Collect suggest info and send to client
+                elif self.suggestButtonClicked and not self.client.refuted:
+                    if "HWAY" in self.gameData['suspects'][self.gameData['player']['name']]['room']:
+                        self.gameData['textBox'].setText("Must be in room to suggest.")
+                        self.suggestButtonClicked = False
+                    else:
+                        self.gameData['lastPlayMode'] = self.gameData['playMode']
+                        self.gameData['playMode'] = 'SUGGEST'
+                        self.gameData['textBox'].setText("Select a suspect and weapon and click DONE to make a suggestion.")
                     pass
                 elif self.accuseButtonClicked:
                     #Verify player can accuse
                     #Collect accusation info and send to client
                     if "HWAY" in self.gameData['suspects'][self.gameData['player']['name']]['room']:
                         self.gameData['textBox'].setText("Must be in room to accuse.")
+                        self.accuseButtonClicked = False
                     else:
                         self.gameData['lastPlayMode'] = self.gameData['playMode']
                         self.gameData['playMode'] = 'ACCUSE'
@@ -897,7 +905,9 @@ class Game(object):
 
                 if self.selectedSuspect and self.selectedWeapon and self.doneButtonClicked:
                     #we have everything for the suggestion.
-                    #todo: Send this to the client for suggestion verification
+                    #Current room is used, as per Clue rules.
+                    self.client.suggestion_made(self.selectedSuspect, self.selectedWeapon)
+                    self.doneButtonClicked = False
                     pass
 
             elif self.gameData['playMode'] == 'ACCUSE':
@@ -920,19 +930,24 @@ class Game(object):
 
                 if self.selectedSuspect and self.selectedWeapon and self.selectedRoom and self.doneButtonClicked:
                     #we have everything for the accusation.
-                    #todo: Send this to the client for accusation verification
                     self.client.accusation_made(self.selectedSuspect, self.selectedWeapon, self.selectedRoom)
                     self.doneButtonClicked = False
                     pass
 
             elif self.gameData['playMode'] == 'ALIBI':
                 if self.selectedCard:
-                    for card in self.gameData['players']['cards']['objects']:
+                    for card in self.gameData['player']['cards']['objects']:
                         card.unsetHilight()
-                    self.gameData['players']['cards']['objects'][
-                        self.gameData['players']['cards']['names'].index(self.selectedCard)].setHilight()
-                    print "The selected alibi card is: " + self.selectedCard
-                #todo: Make the player cards available for clicking
+                    if self.selectedCard in self.client.suggested_components.values():
+                        self.gameData['player']['cards']['objects'][
+                            self.gameData['player']['cards']['names'].index(self.selectedCard)].setHilight()
+                    else:
+                        self.gameData['textBox'].setText("{0} not part of the suggestion.".format(self.selectedCard))
+                        self.selectedCard = None
+                    #print "The selected alibi card is: " + self.selectedCard
+                if self.doneButtonClicked:
+                    self.client.process_alibi(self.selectedCard)
+                    self.doneButtonClicked = False
                 pass
 
             #Update the location of all of the sprite tokens

@@ -68,13 +68,13 @@ Suggestion/accusation made (Server->clients):
 SUGGESTED,<player>,<accused>,<room>,<weapon>,<accuse (t/f)>
 
 Prompts a player refute a suggestion (server->client)
-OFFERREFUTE
+OFFERREFUTE,<player>,<accused>,<room>,<weapon>
 
 Refute suggestion (client->server):
-REFUTE,<player>,[<suggest-component-refuted (suspect/room/weapon)>,...]
+REFUTE,<player>,[<refuted_component>]
 
 Suggestion refuted (server->client):
-REFUTED,<player>,[<suggest-component-refuted>, ...]
+REFUTED,<player>,[<refuted_component>]
 
 Game over, incorrect accusation (server->clients)
 GAMEOVER,<player>,<iswinner (t/f)>

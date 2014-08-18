@@ -45,6 +45,9 @@ class Game():
         self.turn = 0
         #Tracks suspect IDs of disqualified players
         self.losers = []
+        #Tracks progress of a suggestion.
+        self.active_suggestion = {'suggester': None, 'accused': None, 'room': None, 'weapon': None, 'next_player_poll': -1,
+                                  'refuted_component': None}
 
         self.server = None
         self.casefile = None
@@ -176,7 +179,7 @@ class Game():
         payload = q.get()
         handle_thread = threading.Thread(target=self.handle, args=(payload['sender'], payload['message'].decode(),))
         handle_thread.start()
-        handle_thread.join()
+        #handle_thread.join()
 
     #Called when a new connection is made to the server.
     def connection_added(self, client_id):
@@ -238,6 +241,35 @@ class Game():
                 if not gameover_params['iswinner']:
                     nextturn_msg = Game.build_message('NEXTTURN', {'suspect_turn': self.turn})
                     self.server.send_to_all(nextturn_msg.encode_message())
+            else:
+                self.active_suggestion['suggester'] = params['player']
+                self.active_suggestion['accused'] = params['accused']
+                self.active_suggestion['room'] = params['room']
+                self.active_suggestion['weapon'] = params['weapon']
+                #do stuff
+                offerrefute_params = {}
+                offerrefute_params['player'] = params['player']
+                offerrefute_params['weapon'] = params['weapon']
+                offerrefute_params['accused'] = params['accused']
+                offerrefute_params['room'] = params['room']
+                self.active_suggestion['next_player_poll'] = self.next_turn(orig_turn=params['player'], suggest=True)
+                while self.active_suggestion['next_player_poll'] != params['player'] and not self.active_suggestion['refuted_component']:
+                    offerrefute_params['player'] = self.active_suggestion['next_player_poll']
+                    offerrefute_msg = Game.build_message('OFFERREFUTE', offerrefute_params)
+                    self.server.send_to_all(offerrefute_msg.encode_message())
+                    current_poll = self.active_suggestion['next_player_poll']
+                    while self.active_suggestion['next_player_poll'] == current_poll:
+                        sleep(0.1)
+                refuted_params = {'player': params['player'], 'refuted_component': self.active_suggestion['refuted_component']}
+                refuted_msg = Game.build_message('REFUTED', refuted_params)
+                self.server.send_to_all(refuted_msg.encode_message())
+                self.reset_active_suggestion()
+        elif m.get_type() == 'REFUTE':
+            if params['refuted_component']:
+                self.active_suggestion['refuted_component'] = params['refuted_component']
+            self.active_suggestion['next_player_poll'] = self.next_turn(orig_turn=self.active_suggestion['next_player_poll'], suggest=True)
+        else:
+            print "Received unknown message: {0}".format(msg)
         db_access.close_db(db[0], db[1])
 
     #Thread body to handle initial client connections; after 3 connect, waits for 6 to connect or seconds to expire
@@ -257,17 +289,26 @@ class Game():
                     sleep(1)
         self.server.stop_accepting()
 
-    def next_turn(self):
-        current_turn = self.turn
+    def next_turn(self, orig_turn=None, suggest=False):
+        current_turn = self.turn if not orig_turn else orig_turn
         sorted_assigned_suspects = self.assigned_suspects.keys()
         sorted_assigned_suspects.sort()
-        active_players = [susp for susp in sorted_assigned_suspects if susp not in self.losers]
+        #Changing turns ignores DQed players
+        if not suggest:
+            active_players = [susp for susp in sorted_assigned_suspects if susp not in self.losers]
+        #Suggestions use all players, regardless of status
+        else:
+            active_players = sorted_assigned_suspects
         #If current turn is the last suspect in turn order, go to first suspect in turn order
         if current_turn == active_players[len(active_players) - 1]:
             new_turn = active_players[0]
         else:
             new_turn = active_players[active_players.index(current_turn) + 1]
         return new_turn
+
+    def reset_active_suggestion(self):
+        self.active_suggestion = {'suggester': None, 'accused': None, 'room': None, 'weapon': None, 'next_player_poll': -1,
+                                  'refuted_component': None}
 
     @staticmethod
     def build_message(m_type, param=None):
